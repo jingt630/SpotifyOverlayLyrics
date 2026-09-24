@@ -22,7 +22,8 @@ Each function docstring records its purpose, parameter types, return value,
 precondition, and postcondition.
 
 The JSON shapes those Spotify calls return are written out in
-spotify_api_formats.md.
+spotify_api_formats.md. The function and URL flow is drawn in
+spotify_flow.md.
 """
 
 from __future__ import annotations
