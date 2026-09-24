@@ -7,9 +7,11 @@ Spotify gives the song identity and progress_ms. LRCLIB gives lines that
 each start at a timestamp. The current line is the last line whose timestamp
 is still at or before progress_ms.
 
-Several LRCLIB records can share a title and artist and still differ by a
-few milliseconds. This client locks one record for a Spotify track id so
-later position checks reuse that same timing instead of swapping versions.
+Several LRCLIB records can share a title and artist and still differ by
+a few milliseconds. When the last lyric timestamp is within 2 seconds of
+Spotify's duration, this client picks a record itself. When the gap is
+larger, it asks once for an LRCLIB id and remembers that choice for the
+Spotify track id.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 # Public LRCLIB API. No key is sent.
 LRCLIB_API = "https://lrclib.net"
@@ -29,6 +32,12 @@ LRCLIB_API = "https://lrclib.net"
 USER_AGENT = "SpotifyOverlayLyrics/0.1 (personal local lyrics overlay)"
 # One LRC timestamp. [mm:ss.xx] uses decimal seconds, so .12 means 120 milliseconds.
 LINE_PATTERN = re.compile(r"\[(\d+):(\d+(?:\.\d+)?)\]")
+# Ask the user to choose an LRCLIB id when the last lyric timestamp is farther
+# than this from Spotify's duration.
+DURATION_CHOICE_THRESHOLD_MS = 2000
+# Spotify track id -> LRCLIB id. Spotify ids are strings, so this is not a
+# number-to-number map. The .spotify directory is gitignored.
+CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
 
 
 class LrcLibError(RuntimeError):
@@ -351,7 +360,7 @@ class LrcLibClient:
         self.api_root = api_root.rstrip("/")
         self.user_agent = user_agent
 
-    def _get_json(self, path: str, query: dict[str, str | int]) -> tuple[int, object]:
+    def _get_json(self, path: str, query: dict[str, str | int], *, announce: bool = True) -> tuple[int, object]:
         """GET one LRCLIB path and return the status plus the parsed JSON.
 
         Purpose:
@@ -375,7 +384,8 @@ class LrcLibClient:
         """
         params = {key: value for key, value in query.items() if value != ""}
         url = f"{self.api_root}{path}?{urllib.parse.urlencode(params)}" if params else f"{self.api_root}{path}"
-        _print_lrcib_request(path, params)
+        if announce:
+            _print_lrcib_request(path, params)
         for attempt in (1, 2):
             request = urllib.request.Request(url, headers={"User-Agent": self.user_agent}, method="GET")
             try:
@@ -435,6 +445,30 @@ class LrcLibClient:
                 "duration": duration_sec,
             },
         )
+        if status == 404 or not isinstance(body, dict) or "id" not in body:
+            return None
+        return body
+
+    def get_by_id(self, record_id: int, *, announce: bool = False) -> dict | None:
+        """Call GET /api/get/{id} and return that lyrics record.
+
+        Purpose:
+            Load the LRCLIB id already chosen for a Spotify track.
+
+        Parameters:
+            record_id (int): LRCLIB id.
+            announce (bool): Print the request fields when True. Defaults to False.
+
+        Returns:
+            dict | None: The lyrics record, or None when LRCLIB returns 404.
+
+        Precondition:
+            record_id is a positive integer.
+
+        Postcondition:
+            On success, the dict includes id and syncedLyrics when the record has them.
+        """
+        status, body = self._get_json(f"/api/get/{record_id}", {}, announce=announce)
         if status == 404 or not isinstance(body, dict) or "id" not in body:
             return None
         return body
@@ -500,6 +534,48 @@ class LrcLibClient:
             is that record's lyric length. None means the caller should not
             invent a line time.
         """
+        found = self.candidate_records(track_name, artist_name, album_name, duration_ms)
+        chosen = choose_synced_record(found, track_name, artist_name, album_name, duration_ms)
+        if chosen is None:
+            return None
+        record, count, reason = chosen
+        return _match_from_record(
+            record,
+            duration_ms,
+            source="search",
+            candidate_count=count,
+            reason=reason,
+        )
+
+    def candidate_records(
+        self,
+        track_name: str,
+        artist_name: str,
+        album_name: str,
+        duration_ms: int,
+    ) -> list[dict]:
+        """Search LRCLIB and return the records the user or ranker can choose from.
+
+        Purpose:
+            Load /api/get and /api/search once for a Spotify track. The caller
+            ranks them or asks the user for an id.
+
+        Parameters:
+            track_name (str): Spotify track name.
+            artist_name (str): Spotify artists joined with ', '.
+            album_name (str): Spotify album name.
+            duration_ms (int): Spotify item.duration_ms.
+
+        Returns:
+            list[dict]: Combined lyric records. May be empty.
+
+        Precondition:
+            track_name and artist_name are non-empty.
+
+        Postcondition:
+            Each /api/get record not already in the search list is included.
+            The console lists each record's stored duration and last lyric time.
+        """
         print()
         print("LRCLIB search from Spotify:")
         print(f"  track_name: {track_name}")
@@ -518,18 +594,7 @@ class LrcLibClient:
         if signature and all(record.get("id") != signature.get("id") for record in found):
             found = [signature, *found]
         _print_search_durations(found, duration_ms)
-        chosen = choose_synced_record(found, track_name, artist_name, album_name, duration_ms)
-        if chosen is None:
-            return None
-        record, count, reason = chosen
-        source = "get" if signature and record.get("id") == signature.get("id") else "search"
-        return _match_from_record(
-            record,
-            duration_ms,
-            source=source,
-            candidate_count=count,
-            reason=reason,
-        )
+        return found
 
 
 def _match_from_record(
@@ -561,22 +626,144 @@ def _match_from_record(
     )
 
 
+def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
+    """Ask once for an LRCLIB id when automatic duration matching is too far.
+
+    Purpose:
+        Show the synced candidates and accept only an id from that list.
+
+    Parameters:
+        records (list[dict]): Records returned for this Spotify track.
+        duration_ms (int): Spotify item.duration_ms.
+
+    Returns:
+        int | None: The id the user entered, or None when no synced candidate exists.
+
+    Precondition:
+        stdin can read a line.
+
+    Postcondition:
+        The returned id is one of the synced records. The choice file is not
+        written here.
+    """
+    choices: list[tuple[int, dict, int]] = []
+    for record in records:
+        if record.get("instrumental"):
+            continue
+        lines = parse_synced_lyrics(record.get("syncedLyrics") or "")
+        lyric_ms = lyric_duration_ms(lines)
+        if lyric_ms is None or not any(line.text for line in lines):
+            continue
+        choices.append((int(record["id"]), record, lyric_ms))
+    if not choices:
+        return None
+    print()
+    print("The closest last lyric timestamp is more than 2 seconds from Spotify's duration.")
+    print("Enter one LRCLIB id. The same Spotify track will reuse it.")
+    for record_id, record, lyric_ms in choices:
+        name = record.get("trackName") or record.get("name") or ""
+        artist = record.get("artistName") or ""
+        album = record.get("albumName") or ""
+        print(
+            f"  id {record_id}: last lyric {format_ms(lyric_ms)}, "
+            f"{format_ms(abs(duration_ms - lyric_ms))} from Spotify, "
+            f"{name} — {artist} — {album}"
+        )
+    allowed = {record_id for record_id, _record, _lyric_ms in choices}
+    while True:
+        raw = input("LRCLIB id: ").strip()
+        if raw.isdigit() and int(raw) in allowed:
+            return int(raw)
+        print("Enter one of the ids listed above.")
+
+
+class LyricChoiceStore:
+    """Remember which LRCLIB id the user picked for each Spotify track.
+
+    The map is Spotify track id (str) to LRCLIB id (int). It is kept in memory
+    and written to CHOICES_PATH so the same song does not ask again.
+    """
+
+    def __init__(self, path: Path = CHOICES_PATH) -> None:
+        """Load the saved map, or start from an empty one.
+
+        Purpose:
+            Make earlier id choices available for this process.
+
+        Parameters:
+            path (Path): JSON file of the map. Defaults to CHOICES_PATH.
+
+        Returns:
+            None.
+
+        Precondition:
+            If path exists, it contains a JSON object.
+
+        Postcondition:
+            choices maps Spotify track id strings to integer LRCLIB ids.
+        """
+        self.path = path
+        self.choices: dict[str, int] = {}
+        if not path.exists():
+            return
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(raw, dict):
+            self.choices = {str(key): int(value) for key, value in raw.items()}
+
+    def get(self, spotify_id: str) -> int | None:
+        """Return the saved LRCLIB id for this Spotify track, or None."""
+        return self.choices.get(spotify_id)
+
+    def put(self, spotify_id: str, lrclib_id: int) -> None:
+        """Save one Spotify track id to LRCLIB id choice and write the file.
+
+        Purpose:
+            Remember the id the user entered so later lyric lines reuse it.
+
+        Parameters:
+            spotify_id (str): Spotify track id.
+            lrclib_id (int): LRCLIB record id the user chose.
+
+        Returns:
+            None.
+
+        Precondition:
+            spotify_id is non-empty. lrclib_id is an integer.
+
+        Postcondition:
+            get(spotify_id) returns lrclib_id. CHOICES_PATH contains the map.
+        """
+        self.choices[spotify_id] = lrclib_id
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.choices, indent=2), encoding="utf-8")
+
+    def forget(self, spotify_id: str) -> None:
+        """Drop a saved choice when that LRCLIB id can no longer be loaded."""
+        if spotify_id not in self.choices:
+            return
+        del self.choices[spotify_id]
+        self.path.write_text(json.dumps(self.choices, indent=2), encoding="utf-8")
+
+
 class LyricLookup:
     """Cache one LyricMatch per Spotify track so each keypress does not call LRCLIB.
 
     The current line is recomputed locally from progress_ms. LRCLIB is called
-    again only when the Spotify track id changes.
+    again only when the Spotify track id changes. A user-picked LRCLIB id is
+    read from LyricChoiceStore before searching again.
     """
 
-    def __init__(self, client: LrcLibClient | None = None) -> None:
-        """Start with an empty cache.
+    def __init__(self, client: LrcLibClient | None = None, choices: LyricChoiceStore | None = None) -> None:
+        """Start with an empty session cache and the saved id map.
 
         Purpose:
-            Hold the last match in memory for the running terminal session.
+            Hold the last match in memory and load earlier user choices.
 
         Parameters:
             client (LrcLibClient | None): Client to use. A new one is created
                 when this is omitted.
+            choices (LyricChoiceStore | None): Saved Spotify-id map. A new
+                store is loaded when this is omitted.
 
         Returns:
             None.
@@ -585,9 +772,10 @@ class LyricLookup:
             None.
 
         Postcondition:
-            No network call has been made. The cache is empty.
+            No LRCLIB request has been made. The session cache is empty.
         """
         self.client = client or LrcLibClient()
+        self.choices = choices or LyricChoiceStore()
         self._key: str | None = None
         self._match: LyricMatch | None = None
         self._miss_key: str | None = None
@@ -624,12 +812,7 @@ class LyricLookup:
         if query["key"] == self._miss_key:
             print("No synced LRCLIB lyrics for this track (not asking again).")
             return
-        match = self.client.find_synced(
-            query["track_name"],
-            query["artist_name"],
-            query["album_name"],
-            query["duration_ms"],
-        )
+        match = self._resolve(query)
         if match is None:
             self._key = None
             self._match = None
@@ -641,6 +824,65 @@ class LyricLookup:
         self._miss_key = None
         _print_match(match, query["duration_ms"])
         _print_lines(match, query["progress_ms"])
+
+    def _resolve(self, query: dict) -> LyricMatch | None:
+        """Use a saved LRCLIB id, auto-pick within 2 seconds, or ask once.
+
+        Purpose:
+            Bind this Spotify track id to one lyric record.
+
+        Parameters:
+            query (dict): Fields from spotify_track_query, including key,
+                track_name, artist_name, album_name, and duration_ms.
+
+        Returns:
+            LyricMatch | None: The record to lock, or None when nothing synced matches.
+
+        Precondition:
+            query["key"] is the Spotify track id string.
+
+        Postcondition:
+            A user-entered id is stored in the choice map. A later call for
+            the same key returns that record without asking.
+        """
+        saved_id = self.choices.get(query["key"])
+        if saved_id is not None:
+            record = self.client.get_by_id(saved_id)
+            match = _match_from_record(record, query["duration_ms"], "saved", 1, "saved LRCLIB id for this Spotify track") if record else None
+            if match is not None:
+                print(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
+                return match
+            self.choices.forget(query["key"])
+        found = self.client.candidate_records(
+            query["track_name"],
+            query["artist_name"],
+            query["album_name"],
+            query["duration_ms"],
+        )
+        chosen = choose_synced_record(
+            found,
+            query["track_name"],
+            query["artist_name"],
+            query["album_name"],
+            query["duration_ms"],
+        )
+        if chosen is not None:
+            record, count, reason = chosen
+            match = _match_from_record(record, query["duration_ms"], "search", count, reason)
+            if match is not None and match.duration_delta_ms <= DURATION_CHOICE_THRESHOLD_MS:
+                return match
+        picked = _prompt_lrclib_id(found, query["duration_ms"])
+        if picked is None:
+            return None
+        self.choices.put(query["key"], picked)
+        record = next(item for item in found if int(item.get("id") or 0) == picked)
+        return _match_from_record(
+            record,
+            query["duration_ms"],
+            "chosen",
+            1,
+            "LRCLIB id entered for this Spotify track",
+        )
 
 
 def spotify_track_query(now: dict | None) -> dict | None:

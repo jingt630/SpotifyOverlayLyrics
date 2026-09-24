@@ -154,4 +154,4 @@ flowchart TD
     local --> show["Print the current line and the next line"]
 ```
 
-The lyric length is the last timestamp in `syncedLyrics`, not LRCLIB's stored `duration` field. Spotify's `duration_ms` is the length the ranking compares against. Two synced copies are not blended. The winning id stays locked for the rest of that song.
+The lyric length is the last timestamp in `syncedLyrics`, not LRCLIB's stored `duration` field. Spotify's `duration_ms` is the length the ranking compares against. When that gap is 2 seconds or less, the top-ranked record is used. When the gap is larger, the terminal asks for an LRCLIB id once. The answer is stored as a map from Spotify track id (a string) to LRCLIB id (an integer) in `.spotify/lyric_choices.json`. Later lines of the same song read that id and do not ask again.
