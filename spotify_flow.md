@@ -128,3 +128,30 @@ flowchart LR
 ```
 
 `progress_ms` updates only when the script asks again. Between keypresses, a playing song moves forward, but this program does not estimate that movement. `timestamp` is when Spotify last reported the state, and `is_playing` says whether it was moving then.
+
+## Where the functions live
+
+| File | Job |
+| --- | --- |
+| `connect_spotify.py` | `main` and `watch_keyboard`. This is the file you run. |
+| `spotify_client/auth.py` | Login, PKCE, token file, token refresh. |
+| `spotify_client/player.py` | `GET /v1/me` and `GET /v1/me/player/currently-playing`. |
+| `lrclib_client.py` | LRCLIB search and the line at `progress_ms`. |
+
+## How a lyric line is chosen
+
+LRCLIB needs no account. The client sends a `User-Agent` and calls the public API documented at [lrclib.net/docs](https://lrclib.net/docs). It does not call LRCLIB on every keypress. `LyricLookup` keeps one record until the Spotify track id changes, then only `line_at` runs against `progress_ms`.
+
+```mermaid
+flowchart TD
+    now["Spotify currently-playing JSON"] --> fields["track name, artists, album, duration_ms, progress_ms"]
+    fields --> cache{"Same Spotify track id as last time?"}
+    cache -->|Yes| local["line_at uses the locked LRCLIB lines"]
+    cache -->|No| search["GET /api/search by title and artist, plus GET /api/get"]
+    search --> rank["Rank synced title matches by artist, then last lyric timestamp against Spotify duration, then album"]
+    rank --> lock["Lock that one LRCLIB id"]
+    lock --> local
+    local --> show["Print the current line and the next line"]
+```
+
+The lyric length is the last timestamp in `syncedLyrics`, not LRCLIB's stored `duration` field. Spotify's `duration_ms` is the length the ranking compares against. Two synced copies are not blended. The winning id stays locked for the rest of that song.
