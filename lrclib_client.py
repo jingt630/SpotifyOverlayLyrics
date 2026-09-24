@@ -34,7 +34,7 @@ USER_AGENT = "SpotifyOverlayLyrics/0.1 (personal local lyrics overlay)"
 LINE_PATTERN = re.compile(r"\[(\d+):(\d+(?:\.\d+)?)\]")
 # Ask the user to choose an LRCLIB id when the last lyric timestamp is farther
 # than this from Spotify's duration.
-DURATION_CHOICE_THRESHOLD_MS = 2000
+DURATION_CHOICE_THRESHOLD_MS = 4000
 # Spotify track id -> LRCLIB id. Spotify ids are strings, so this is not a
 # number-to-number map. The .spotify directory is gitignored.
 CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
@@ -229,6 +229,11 @@ def lyric_duration_ms(lines: tuple[LyricLine, ...]) -> int | None:
     if not lines:
         return None
     return lines[-1].time_ms
+
+
+def lrclib_track_url(record_id: int) -> str:
+    """Return the LRCLIB website page for one lyrics record."""
+    return f"https://lrclib.net/tracks/{record_id}"
 
 
 def format_ms(duration_ms: int) -> str:
@@ -657,8 +662,9 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
         choices.append((int(record["id"]), record, lyric_ms))
     if not choices:
         return None
+    choices.sort(key=lambda item: abs(duration_ms - item[2]))
     print()
-    print("The closest last lyric timestamp is more than 2 seconds from Spotify's duration.")
+    print(f"The closest last lyric timestamp is more than {DURATION_CHOICE_THRESHOLD_MS} ms from Spotify's duration.")
     print("Enter one LRCLIB id. The same Spotify track will reuse it.")
     for record_id, record, lyric_ms in choices:
         name = record.get("trackName") or record.get("name") or ""
@@ -669,6 +675,7 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
             f"{format_ms(abs(duration_ms - lyric_ms))} from Spotify, "
             f"{name} — {artist} — {album}"
         )
+        print(f"    {lrclib_track_url(record_id)}")
     allowed = {record_id for record_id, _record, _lyric_ms in choices}
     while True:
         raw = input("LRCLIB id: ").strip()
@@ -851,6 +858,7 @@ class LyricLookup:
             match = _match_from_record(record, query["duration_ms"], "saved", 1, "saved LRCLIB id for this Spotify track") if record else None
             if match is not None:
                 print(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
+                print(lrclib_track_url(saved_id))
                 return match
             self.choices.forget(query["key"])
         found = self.client.candidate_records(
@@ -926,6 +934,17 @@ def spotify_track_query(now: dict | None) -> dict | None:
     }
 
 
+def _lyric_delta_ms(record: dict, spotify_duration_ms: int) -> int:
+    """Gap between Spotify's duration and this record's last lyric timestamp.
+
+    Records with no synced timestamp sort after every timed record.
+    """
+    lyric_ms = lyric_duration_ms(parse_synced_lyrics(record.get("syncedLyrics") or ""))
+    if lyric_ms is None:
+        return 10**12
+    return abs(spotify_duration_ms - lyric_ms)
+
+
 def _print_lrcib_request(path: str, params: dict[str, str | int]) -> None:
     """Print the LRCLIB path and query fields before a GET. The URL is not printed."""
     print()
@@ -940,12 +959,14 @@ def _print_search_durations(records: list[dict], spotify_duration_ms: int) -> No
     print(f"LRCLIB returned {len(records)} record(s). Spotify duration is {format_ms(spotify_duration_ms)}:")
     if not records:
         return
-    for record in records:
+    ordered = sorted(records, key=lambda record: _lyric_delta_ms(record, spotify_duration_ms))
+    for record in ordered:
         stored = record.get("duration")
         stored_shown = f"{int(stored)}s" if isinstance(stored, (int, float)) else "(missing)"
         lines = parse_synced_lyrics(record.get("syncedLyrics") or "")
         lyric_ms = lyric_duration_ms(lines)
         lyric_shown = format_ms(lyric_ms) if lyric_ms is not None else "(no synced lines)"
+        delta_shown = format_ms(abs(spotify_duration_ms - lyric_ms)) if lyric_ms is not None else "n/a"
         if record.get("instrumental"):
             kind = "instrumental"
         elif lyric_ms is None:
@@ -955,9 +976,11 @@ def _print_search_durations(records: list[dict], spotify_duration_ms: int) -> No
         name = record.get("trackName") or record.get("name") or ""
         artist = record.get("artistName") or ""
         print(
-            f"  id {record.get('id')}: stored duration {stored_shown}, "
+            f"  id {record.get('id')}: delta {delta_shown}, stored duration {stored_shown}, "
             f"last lyric {lyric_shown}, {kind}, {name} — {artist}"
         )
+        if isinstance(record.get("id"), int):
+            print(f"    {lrclib_track_url(record['id'])}")
 
 
 def _print_match(match: LyricMatch, duration_ms: int) -> None:
@@ -967,6 +990,7 @@ def _print_match(match: LyricMatch, duration_ms: int) -> None:
         f"LRCLIB {match.source} id {match.record_id}: "
         f"{match.track_name} — {match.artist_name} — {match.album_name}"
     )
+    print(lrclib_track_url(match.record_id))
     print(f"LRCLIB stored duration: {match.duration_sec}s (not used to choose)")
     print(f"Last lyric timestamp: {format_ms(match.lyric_duration_ms)}")
     print(f"Spotify duration: {format_ms(duration_ms)}")
