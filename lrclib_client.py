@@ -790,7 +790,7 @@ class LyricChoiceStore:
         """Save one Spotify track id to LRCLIB id choice and write the file.
 
         Purpose:
-            Remember the id the user entered so later lyric lines reuse it.
+            Remember the LRCLIB id for this Spotify track so later plays reuse it.
 
         Parameters:
             spotify_id (str): Spotify track id.
@@ -991,8 +991,8 @@ class LyricLookup:
             query["key"] is the Spotify track id string.
 
         Postcondition:
-            A user-entered id is stored in the choice map. A later call for
-            the same key returns that record without asking.
+            An auto-picked or user-entered id is stored in the choice map.
+            A later call for the same key loads that id without searching again.
         """
         saved_id = self.choices.get(query["key"])
         if saved_id is not None:
@@ -1020,6 +1020,8 @@ class LyricLookup:
             record, count, reason = chosen
             match = _match_from_record(record, query["duration_ms"], "search", count, reason)
             if match is not None:
+                self.choices.put(query["key"], match.record_id)
+                _debug(f"Saved LRCLIB id {match.record_id} for this Spotify track.")
                 return match
         picked = _prompt_lrclib_id(found, query["duration_ms"])
         if picked is None:
