@@ -14,7 +14,7 @@ import sys
 import time
 
 import lrclib_client
-from lrclib_client import LyricLookup, LyricWindow
+from lrclib_client import LyricLookup, LyricWindow, format_clock
 from spotify_client.auth import (
     TOKEN_PATH,
     authorize,
@@ -83,9 +83,11 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
         Stay aligned with playback without calling Spotify on every check.
         Spotify is polled about once per SPOTIFY_POLL_SECONDS. Between polls,
         progress_ms advances by the time spent only while Spotify reported
-        that audio is playing. Each pair is the singing line and the next line
-        in parentheses. It is printed when that pair's LRCLIB timestamps change.
-        The last lyric is printed once with no next line.
+        that audio is playing.         Each pair is the singing line and the next line in parentheses. It is
+        printed when that pair's LRCLIB timestamps change. A new track prints
+        its title and artist first. While paused, Spotify still returns the
+        item and progress_ms with is_playing false, and the pause position is
+        printed once as (currently paused at m:ss).
 
     Parameters:
         session (dict): Saved Spotify login.
@@ -111,6 +113,9 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
     playing = bool(now and now.get("is_playing"))
     last_poll = anchor_at
     last_track = _track_id(now)
+    prev_track_id: str | None = None
+    pause_at_ms: int | None = None
+    showing_pause = False
     printed = False
     while True:
         if time.monotonic() - last_poll >= SPOTIFY_POLL_SECONDS:
@@ -135,12 +140,38 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
         duration = _duration_ms(now)
         if duration is not None:
             progress = min(progress, duration)
+        track = _track_id(now)
+        song = _track_header(now)
+        artist = _track_artists(now)
+        if track is not None and track != prev_track_id:
+            if printed:
+                print()
+            print(_format_track_label(song, artist))
+            printed = True
+            showing_pause = False
+            prev_track_id = track
+            pause_at_ms = None
         shown = _lyric_print(lyrics, now, progress)
         if shown is not None:
             if printed:
                 print()
             _print_lyric(shown)
             printed = True
+        if now is not None and track is not None and not playing:
+            if not showing_pause or pause_at_ms != progress:
+                if printed:
+                    print()
+                print(f"(currently paused at {format_clock(progress)})")
+                printed = True
+                showing_pause = True
+                pause_at_ms = progress
+        elif playing:
+            showing_pause = False
+            pause_at_ms = None
+        if now is None:
+            prev_track_id = None
+            showing_pause = False
+            pause_at_ms = None
         time.sleep(LYRIC_DISPLAY_SECONDS)
 
 
@@ -196,6 +227,33 @@ def _print_lyric(shown: LyricWindow | str) -> None:
     print(shown.singing.text)
     if shown.next_line is not None:
         print(f"({shown.next_line.text})")
+
+
+def _format_track_label(song: str | None, artist: str | None) -> str:
+    """Return one line with the song title and artist names."""
+    if song and artist:
+        return f"{song} — {artist}"
+    if song:
+        return song
+    return "Unknown track"
+
+
+def _track_header(now: dict | None) -> str | None:
+    """Return the track title from a currently-playing body, or None."""
+    item = (now or {}).get("item") or {}
+    title = item.get("name")
+    if isinstance(title, str) and title:
+        return title
+    return None
+
+
+def _track_artists(now: dict | None) -> str | None:
+    """Return artist names joined with ', ', or None when nothing is playing."""
+    item = (now or {}).get("item") or {}
+    names = [artist.get("name", "") for artist in item.get("artists", []) if artist.get("name")]
+    if not names:
+        return None
+    return ", ".join(names)
 
 
 def _track_id(now: dict | None) -> str | None:
