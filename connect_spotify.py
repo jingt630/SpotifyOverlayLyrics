@@ -14,7 +14,7 @@ import sys
 import time
 
 import lrclib_client
-from lrclib_client import LyricLookup
+from lrclib_client import LyricLookup, LyricWindow
 from spotify_client.auth import (
     TOKEN_PATH,
     authorize,
@@ -33,8 +33,13 @@ PRINT_API_DETAILS = False
 SPOTIFY_POLL_SECONDS = 1.0
 
 # So we keep a local clock to help with lyric switching if between Spotify polls.
-# How often to redraw the lyric line from the local clock between Spotify polls.
+# How often to check the local clock for a new lyric pair. The pair itself is
+# printed only when it changes.
 LYRIC_DISPLAY_SECONDS = 0.1
+# A Spotify poll can report progress_ms from a moment before the response
+# arrives, so it lands slightly behind the local clock. Treat a rewind smaller
+# than this as that delay. A larger rewind is a real seek and is applied.
+SEEK_REWIND_MS = 2500
 
 
 def watch_keyboard(session: dict, lyrics: LyricLookup) -> None:
@@ -72,17 +77,19 @@ def watch_keyboard(session: dict, lyrics: LyricLookup) -> None:
 
 
 def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
-    """Redraw the current lyric line from a local clock, corrected by Spotify.
+    """Print each lyric pair once, using a local clock corrected by Spotify.
 
     Purpose:
-        Stay aligned with playback without calling Spotify on every redraw.
+        Stay aligned with playback without calling Spotify on every check.
         Spotify is polled about once per SPOTIFY_POLL_SECONDS. Between polls,
         progress_ms advances by the time spent only while Spotify reported
-        that audio is playing. LRCLIB is called when the track id changes.
+        that audio is playing. Each pair is the singing line and the next line
+        in parentheses. It is printed when that pair's LRCLIB timestamps change.
+        The last lyric is printed once with no next line.
 
     Parameters:
         session (dict): Saved Spotify login.
-        lyrics (LyricLookup): Cache that maps a playback position to a lyric line.
+        lyrics (LyricLookup): Cache that maps a playback position to a lyric pair.
 
     Returns:
         None.
@@ -91,45 +98,113 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
         session can call the currently-playing endpoint.
 
     Postcondition:
-        The latest lyric line and playback position are on the terminal.
-        The function returns when the user presses Ctrl+C.
+        The latest lyric pair is on the terminal. The function returns when
+        the user presses Ctrl+C.
     """
     session, now = fetch_now_playing(session)
     if lyrics.needs_lookup(now):
-        lyrics.current_line(now, _progress_ms(now))
+        lyrics.window_at(now, _progress_ms(now))
     print("Following the current lyric line. Press Ctrl+C to stop.")
+    print()
     anchor_progress = _progress_ms(now)
     anchor_at = time.monotonic()
     playing = bool(now and now.get("is_playing"))
     last_poll = anchor_at
-    last_text: str | None = None
+    last_track = _track_id(now)
+    printed = False
     while True:
         if time.monotonic() - last_poll >= SPOTIFY_POLL_SECONDS:
             session, now = fetch_now_playing(session)
-            last_poll = time.monotonic()
-            anchor_progress = _progress_ms(now)
-            anchor_at = last_poll
+            reported = _progress_ms(now)
+            elapsed_ms = int((time.monotonic() - anchor_at) * 1000) if playing else 0
+            estimate = anchor_progress + elapsed_ms
+            track = _track_id(now)
+            small_rewind = (
+                track is not None
+                and track == last_track
+                and reported < estimate
+                and estimate - reported < SEEK_REWIND_MS
+            )
+            anchor_progress = estimate if small_rewind else reported
+            anchor_at = time.monotonic()
+            last_poll = anchor_at
             playing = bool(now and now.get("is_playing"))
+            last_track = track
         elapsed_ms = int((time.monotonic() - anchor_at) * 1000) if playing else 0
         progress = anchor_progress + elapsed_ms
         duration = _duration_ms(now)
         if duration is not None:
             progress = min(progress, duration)
-        if lyrics.needs_lookup(now):
-            print()
-            lyrics.current_line(now, progress)
-        text = lyrics.current_line(now, progress)
-        if text != last_text and last_text is not None:
-            print()
-        last_text = text
-        if now is None:
-            shown = "Nothing is currently playing."
-        elif text:
-            shown = text
-        else:
-            shown = "Before the first lyric line."
-        print(f"\r{progress} ms  {shown}   ", end="", flush=True)
+        shown = _lyric_print(lyrics, now, progress)
+        if shown is not None:
+            if printed:
+                print()
+            _print_lyric(shown)
+            printed = True
         time.sleep(LYRIC_DISPLAY_SECONDS)
+
+
+def _lyric_print(lyrics: LyricLookup, now: dict | None, progress_ms: int) -> LyricWindow | str | None:
+    """Return the next lyric pair to print, or None when that pair is already saved.
+
+    Purpose:
+        Print only when the singing timestamp or the next timestamp differs
+        from the pair saved on the lookup. The same words at a new timestamp
+        are printed. The last lyric is printed once with no next line.
+
+    Parameters:
+        lyrics (LyricLookup): Cache that stores the two lines and their timestamps.
+        now (dict | None): Spotify currently-playing body, or None.
+        progress_ms (int): Playback position in milliseconds.
+
+    Returns:
+        LyricWindow | str | None: The pair to print, a status line, or None
+        when nothing new should be printed.
+
+    Precondition:
+        progress_ms is >= 0.
+
+    Postcondition:
+        A returned LyricWindow is saved as singing_line and next_line.
+        None leaves the saved pair unchanged.
+    """
+    if now is None:
+        message = "Nothing is currently playing."
+        if lyrics.status_is_showing(message):
+            return None
+        lyrics.note_status(message)
+        return message
+    track = _track_id(now)
+    window = lyrics.window_at(now, progress_ms)
+    if window is None:
+        message = "No synced lyrics for this track."
+        if lyrics.status_is_showing(message, track):
+            return None
+        lyrics.note_status(message, track)
+        return message
+    if lyrics.pair_is_showing(track, window):
+        return None
+    lyrics.remember_pair(track, window)
+    return window
+
+
+def _print_lyric(shown: LyricWindow | str) -> None:
+    """Print the singing line and, when the song still has one, the next line."""
+    if isinstance(shown, str):
+        print(shown)
+        return
+    print(shown.singing.text)
+    if shown.next_line is not None:
+        print(f"({shown.next_line.text})")
+
+
+def _track_id(now: dict | None) -> str | None:
+    """Return the Spotify track id, or None when nothing is playing."""
+    item = (now or {}).get("item") or {}
+    track_id = item.get("id")
+    if isinstance(track_id, str) and track_id:
+        return track_id
+    return None
 
 
 def _progress_ms(now: dict | None) -> int:

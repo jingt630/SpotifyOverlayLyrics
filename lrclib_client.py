@@ -16,6 +16,7 @@ remembers that choice for the Spotify track id.
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import time
@@ -45,7 +46,11 @@ def _debug(*args, **kwargs) -> None:
         print(*args, **kwargs)
 # Spotify track id -> LRCLIB id. Spotify ids are strings, so this is not a
 # number-to-number map. The .spotify directory is gitignored.
+# JSON cannot store comments, so song name, artist, album, and duration live
+# in the spreadsheet beside this file.
 CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
+CATALOG_PATH = CHOICES_PATH.with_name("lyric_catalog.csv")
+CATALOG_FIELDS = ("spotify_id", "lrclib_id", "track_name", "artist_name", "album_name", "duration")
 
 
 class LrcLibError(RuntimeError):
@@ -63,6 +68,21 @@ class LyricLine:
 
     time_ms: int
     text: str
+
+
+@dataclass(frozen=True)
+class LyricWindow:
+    """The line being sung and the next line, each with its LRCLIB timestamp.
+
+    Attributes:
+        singing (LyricLine): The line to show as current. Before the first
+            timestamp this is still the first lyric.
+        next_line (LyricLine | None): The following line. None on the last lyric.
+            Its timestamp is never equal to singing.time_ms.
+    """
+
+    singing: LyricLine
+    next_line: LyricLine | None
 
 
 @dataclass(frozen=True)
@@ -222,6 +242,89 @@ def line_at(lines: tuple[LyricLine, ...], progress_ms: int) -> tuple[LyricLine |
     return current, next_line
 
 
+def lyric_window(lines: tuple[LyricLine, ...], progress_ms: int) -> LyricWindow | None:
+    """Choose the singing line and the next line for this playback position.
+
+    Purpose:
+        Keep one pair of LRCLIB timestamps. From 0 ms until the second line's
+        timestamp, the singing line is the first lyric and the next line is
+        the second. When playback reaches the next line's timestamp, that line
+        becomes the singing line and the line after it becomes the next line.
+        The last lyric has no next line.
+
+    Parameters:
+        lines (tuple[LyricLine, ...]): Sorted synced lines from one record.
+        progress_ms (int): Playback position in milliseconds.
+
+    Returns:
+        LyricWindow | None: The singing line and the next line. None when
+        every line is blank.
+
+    Precondition:
+        lines are sorted by time_ms. progress_ms is >= 0.
+
+    Postcondition:
+        next_line is None or its timestamp is greater than singing.time_ms.
+        Entries that share a timestamp collapse to one line, so the two slots
+        never hold the same timestamp. Playback before the first timestamp
+        still returns the first lyric as the singing line.
+    """
+    visible: list[LyricLine] = []
+    for line in lines:
+        if not line.text:
+            continue
+        if visible and visible[-1].time_ms == line.time_ms:
+            visible[-1] = line
+            continue
+        visible.append(line)
+    if not visible:
+        return None
+    index = 0
+    for cursor in range(len(visible) - 1):
+        if progress_ms < visible[cursor + 1].time_ms:
+            break
+        index = cursor + 1
+    singing = visible[index]
+    next_line = visible[index + 1] if index + 1 < len(visible) else None
+    return LyricWindow(singing=singing, next_line=next_line)
+
+
+def same_lyric_timestamps(
+    singing: LyricLine | None,
+    next_line: LyricLine | None,
+    window: LyricWindow,
+) -> bool:
+    """Return whether this window is the pair already saved.
+
+    Purpose:
+        Treat a reprint as the same singing timestamp and the same next
+        timestamp. The same words later in the song have a new timestamp, so
+        they are a new pair. The last lyric matches only when both next lines
+        are absent.
+
+    Parameters:
+        singing (LyricLine | None): The saved singing line.
+        next_line (LyricLine | None): The saved next line. None at the last lyric.
+        window (LyricWindow): The pair for the current playback position.
+
+    Returns:
+        bool: True when both timestamps match the saved pair.
+
+    Precondition:
+        window.next_line is None or its timestamp differs from window.singing.
+
+    Postcondition:
+        The saved lines and the window are unchanged.
+    """
+    if singing is None or singing.time_ms != window.singing.time_ms:
+        return False
+    if window.next_line is None:
+        return next_line is None
+    if next_line is None:
+        return False
+    return next_line.time_ms == window.next_line.time_ms
+
+
 def lyric_duration_ms(lines: tuple[LyricLine, ...]) -> int | None:
     """Return the last synced timestamp, which is how long the lyric file runs.
 
@@ -256,6 +359,13 @@ def format_ms(duration_ms: int) -> str:
     minutes, remainder = divmod(abs(duration_ms), 60000)
     seconds = remainder / 1000
     return f"{minutes}:{seconds:06.3f}"
+
+
+def format_clock(duration_ms: int) -> str:
+    """Format milliseconds as m:ss, rounded to the nearest second."""
+    total_seconds = max(0, int(round(duration_ms / 1000)))
+    minutes, seconds = divmod(total_seconds, 60)
+    return f"{minutes}:{seconds:02d}"
 
 
 def _title_rank(record: dict, track_name: str) -> int | None:
@@ -750,10 +860,12 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
 
 
 class LyricChoiceStore:
-    """Remember which LRCLIB id the user picked for each Spotify track.
+    """Remember which LRCLIB id belongs to each Spotify track.
 
     The map is Spotify track id (str) to LRCLIB id (int). It is kept in memory
     and written to CHOICES_PATH so the same song does not ask again.
+    CATALOG_PATH is a spreadsheet of the same ids plus the song name, artist,
+    album, and duration.
     """
 
     def __init__(self, path: Path = CHOICES_PATH) -> None:
@@ -773,56 +885,102 @@ class LyricChoiceStore:
 
         Postcondition:
             choices maps Spotify track id strings to integer LRCLIB ids.
+            catalog holds the spreadsheet rows when CATALOG_PATH exists.
         """
         self.path = path
         self.choices: dict[str, int] = {}
-        if not path.exists():
-            return
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(raw, dict):
-            self.choices = {str(key): int(value) for key, value in raw.items()}
+        self.catalog: dict[str, dict[str, str]] = {}
+        if path.exists():
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict):
+                self.choices = {str(key): int(value) for key, value in raw.items()}
+        if CATALOG_PATH.exists():
+            with CATALOG_PATH.open(encoding="utf-8-sig", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    spotify_id = str(row.get("spotify_id") or "")
+                    if spotify_id:
+                        self.catalog[spotify_id] = {field: str(row.get(field) or "") for field in CATALOG_FIELDS}
 
     def get(self, spotify_id: str) -> int | None:
         """Return the saved LRCLIB id for this Spotify track, or None."""
         return self.choices.get(spotify_id)
 
-    def put(self, spotify_id: str, lrclib_id: int) -> None:
-        """Save one Spotify track id to LRCLIB id choice and write the file.
+    def put(
+        self,
+        spotify_id: str,
+        lrclib_id: int,
+        track_name: str,
+        artist_name: str,
+        album_name: str,
+        duration_ms: int,
+    ) -> None:
+        """Save one Spotify track id to LRCLIB id and write the spreadsheet row.
 
         Purpose:
             Remember the LRCLIB id for this Spotify track so later plays reuse it.
+            The spreadsheet row records the song name, artist, album, and duration.
 
         Parameters:
             spotify_id (str): Spotify track id.
-            lrclib_id (int): LRCLIB record id the user chose.
+            lrclib_id (int): LRCLIB record id for this track.
+            track_name (str): Spotify track name.
+            artist_name (str): Spotify artist names.
+            album_name (str): Spotify album name.
+            duration_ms (int): Spotify track length in milliseconds.
 
         Returns:
             None.
 
         Precondition:
-            spotify_id is non-empty. lrclib_id is an integer.
+            spotify_id is non-empty. lrclib_id is an integer. duration_ms is >= 0.
 
         Postcondition:
             get(spotify_id) returns lrclib_id. CHOICES_PATH contains the map.
+            CATALOG_PATH contains one row for this Spotify track. An unchanged
+            row does not rewrite the files.
         """
+        row = {
+            "spotify_id": spotify_id,
+            "lrclib_id": str(lrclib_id),
+            "track_name": track_name,
+            "artist_name": artist_name,
+            "album_name": album_name,
+            "duration": format_clock(duration_ms),
+        }
+        if self.choices.get(spotify_id) == lrclib_id and self.catalog.get(spotify_id) == row:
+            return
         self.choices[spotify_id] = lrclib_id
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.choices, indent=2), encoding="utf-8")
+        self.catalog[spotify_id] = row
+        self._write()
 
     def forget(self, spotify_id: str) -> None:
         """Drop a saved choice when that LRCLIB id can no longer be loaded."""
-        if spotify_id not in self.choices:
+        if spotify_id not in self.choices and spotify_id not in self.catalog:
             return
-        del self.choices[spotify_id]
+        self.choices.pop(spotify_id, None)
+        self.catalog.pop(spotify_id, None)
+        self._write()
+
+    def _write(self) -> None:
+        """Write the id map and the spreadsheet from the in-memory rows."""
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self.choices, indent=2), encoding="utf-8")
+        with CATALOG_PATH.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=CATALOG_FIELDS)
+            writer.writeheader()
+            for spotify_id in self.choices:
+                row = self.catalog.get(spotify_id)
+                if row is not None:
+                    writer.writerow(row)
 
 
 class LyricLookup:
     """Cache one LyricMatch per Spotify track so each keypress does not call LRCLIB.
 
     The current line is recomputed locally from progress_ms. LRCLIB is called
-    again only when the Spotify track id changes. A user-picked LRCLIB id is
-    read from LyricChoiceStore before searching again.
+    again only when the Spotify track id changes. singing_line and next_line
+    keep the pair now on screen, including each line's LRCLIB timestamp.
+    A user-picked LRCLIB id is read from LyricChoiceStore before searching again.
     """
 
     def __init__(self, client: LrcLibClient | None = None, choices: LyricChoiceStore | None = None) -> None:
@@ -851,6 +1009,11 @@ class LyricLookup:
         self._key: str | None = None
         self._match: LyricMatch | None = None
         self._miss_key: str | None = None
+        self.singing_line: LyricLine | None = None
+        self.next_line: LyricLine | None = None
+        self._shown_track: str | None = None
+        self._pair_on_screen = False
+        self._status: tuple[str | None, str] | None = None
 
     def needs_lookup(self, now: dict | None) -> bool:
         """Return whether this playback still needs an LRCLIB record chosen.
@@ -907,6 +1070,96 @@ class LyricLookup:
         if current is None:
             return ""
         return current.text
+
+    def window_at(self, now: dict | None, progress_ms: int) -> LyricWindow | None:
+        """Return the singing line and the next line for this playback position.
+
+        Purpose:
+            Lock the LRCLIB record when the Spotify track changes, then return
+            both lines with their timestamps. From 0 ms until the second line's
+            timestamp, the singing line is the first lyric.
+
+        Parameters:
+            now (dict | None): Spotify currently-playing body, or None.
+            progress_ms (int): Playback position in milliseconds.
+
+        Returns:
+            LyricWindow | None: The pair to show. None when no synced record
+            is locked. The last lyric has next_line None.
+
+        Precondition:
+            progress_ms is >= 0.
+
+        Postcondition:
+            singing_line and next_line are unchanged. The locked record is
+            unchanged when the Spotify track id is unchanged.
+        """
+        self._ensure(now)
+        if self._match is None:
+            return None
+        return lyric_window(self._match.lines, progress_ms)
+
+    def pair_is_showing(self, track_id: str | None, window: LyricWindow) -> bool:
+        """Return whether the terminal already printed this timestamp pair.
+
+        Purpose:
+            Skip a print when the singing timestamp and the next timestamp are
+            the ones already saved. A later repeat of the same words has a
+            different timestamp, so it is not skipped.
+
+        Parameters:
+            track_id (str | None): Spotify track id for this playback.
+            window (LyricWindow): The pair for the current position.
+
+        Returns:
+            bool: True when this pair is already the saved one and was the
+            last thing printed.
+
+        Precondition:
+            window is the pair for track_id.
+
+        Postcondition:
+            singing_line and next_line are unchanged.
+        """
+        if not self._pair_on_screen or track_id != self._shown_track:
+            return False
+        return same_lyric_timestamps(self.singing_line, self.next_line, window)
+
+    def remember_pair(self, track_id: str | None, window: LyricWindow) -> None:
+        """Save the singing line and the next line after they are printed.
+
+        Purpose:
+            Remember both LRCLIB timestamps for the pair now on screen. The
+            last lyric is saved with next_line None.
+
+        Parameters:
+            track_id (str | None): Spotify track id for this playback.
+            window (LyricWindow): The pair that was just printed.
+
+        Returns:
+            None.
+
+        Precondition:
+            window is the pair for track_id.
+
+        Postcondition:
+            singing_line is window.singing. next_line is window.next_line.
+            pair_is_showing(track_id, window) is True.
+        """
+        self._shown_track = track_id
+        self.singing_line = window.singing
+        self.next_line = window.next_line
+        self._pair_on_screen = True
+        self._status = None
+
+    def status_is_showing(self, message: str, track_id: str | None = None) -> bool:
+        """Return whether this status line is already the last print."""
+        return not self._pair_on_screen and self._status == (track_id, message)
+
+    def note_status(self, message: str, track_id: str | None = None) -> None:
+        """Remember a status print without clearing the saved lyric pair."""
+        self._status = (track_id, message)
+        self._pair_on_screen = False
 
     def _ensure(self, now: dict | None) -> None:
         """Lock an LRCLIB record for the Spotify track in now, if one can be chosen."""
@@ -999,6 +1252,14 @@ class LyricLookup:
             record = self.client.get_by_id(saved_id)
             match = _match_from_record(record, query["duration_ms"], "saved", 1, "saved LRCLIB id for this Spotify track") if record else None
             if match is not None:
+                self.choices.put(
+                    query["key"],
+                    saved_id,
+                    query["track_name"],
+                    query["artist_name"],
+                    query["album_name"],
+                    query["duration_ms"],
+                )
                 _debug(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
                 _debug(lrclib_track_url(saved_id))
                 return match
@@ -1020,13 +1281,27 @@ class LyricLookup:
             record, count, reason = chosen
             match = _match_from_record(record, query["duration_ms"], "search", count, reason)
             if match is not None:
-                self.choices.put(query["key"], match.record_id)
+                self.choices.put(
+                    query["key"],
+                    match.record_id,
+                    query["track_name"],
+                    query["artist_name"],
+                    query["album_name"],
+                    query["duration_ms"],
+                )
                 _debug(f"Saved LRCLIB id {match.record_id} for this Spotify track.")
                 return match
         picked = _prompt_lrclib_id(found, query["duration_ms"])
         if picked is None:
             return None
-        self.choices.put(query["key"], picked)
+        self.choices.put(
+            query["key"],
+            picked,
+            query["track_name"],
+            query["artist_name"],
+            query["album_name"],
+            query["duration_ms"],
+        )
         record = next(item for item in found if int(item.get("id") or 0) == picked)
         return _match_from_record(
             record,
