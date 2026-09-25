@@ -7,11 +7,11 @@ Spotify gives the song identity and progress_ms. LRCLIB gives lines that
 each start at a timestamp. The current line is the last line whose timestamp
 is still at or before progress_ms.
 
-Several LRCLIB records can share a title and artist and still differ by
-a few milliseconds. When the last lyric timestamp is within 2 seconds of
-Spotify's duration, this client picks a record itself. When the gap is
-larger, it asks once for an LRCLIB id and remembers that choice for the
-Spotify track id.
+Several LRCLIB records can share a title and artist. This client prefers
+the same title, artist, and album, then the LRCLIB duration closest to
+Spotify. The last lyric timestamp is used only when every stored duration
+is outside the threshold. Otherwise it asks once for an LRCLIB id and
+remembers that choice for the Spotify track id.
 """
 
 from __future__ import annotations
@@ -35,6 +35,14 @@ LINE_PATTERN = re.compile(r"\[(\d+):(\d+(?:\.\d+)?)\]")
 # Ask the user to choose an LRCLIB id when the last lyric timestamp is farther
 # than this from Spotify's duration.
 DURATION_CHOICE_THRESHOLD_MS = 4000
+# connect_spotify.py sets this. False hides search dumps and raw lyric details.
+VERBOSE = True
+
+
+def _debug(*args, **kwargs) -> None:
+    """Print a diagnostic line only while VERBOSE is on."""
+    if VERBOSE:
+        print(*args, **kwargs)
 # Spotify track id -> LRCLIB id. Spotify ids are strings, so this is not a
 # number-to-number map. The .spotify directory is gitignored.
 CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
@@ -92,25 +100,32 @@ class LyricMatch:
 
 
 def normalize_name(value: str) -> str:
-    """Lowercase a title, artist, or album and drop punctuation.
+    """Compare a title, artist, or album across capitalization and punctuation.
 
     Purpose:
-        Compare Spotify and LRCLIB names that differ only by case or symbols.
+        Keep letters from every language. Chinese, Japanese, and other
+        non-English names stay intact. English case is folded.
 
     Parameters:
         value (str): Raw name.
 
     Returns:
-        str: Words separated by single spaces.
+        str: Letters and digits separated by single spaces. Empty when the
+        name had no letters or digits.
 
     Precondition:
         value is a string.
 
     Postcondition:
-        The result contains only lowercase letters, digits, and single spaces.
+        Punctuation is removed. Unicode letters and digits are preserved.
     """
-    cleaned = re.sub(r"[^a-z0-9]+", " ", value.lower())
-    return " ".join(cleaned.split())
+    kept = []
+    for char in value.casefold():
+        if char.isalnum():
+            kept.append(char)
+        else:
+            kept.append(" ")
+    return " ".join("".join(kept).split())
 
 
 def base_title(track_name: str) -> str:
@@ -243,46 +258,63 @@ def format_ms(duration_ms: int) -> str:
     return f"{minutes}:{seconds:06.3f}"
 
 
-def _rank_key(
-    record: dict,
-    track_name: str,
-    artist_name: str,
-    album_name: str,
-    duration_ms: int,
-) -> tuple[int, int, int, int, int] | None:
-    """Build the sort key for one search hit, or None when it cannot be used.
-
-    Smaller keys win. Order: title, artist, gap between Spotify's duration and
-    the last lyric timestamp, album, then LRCLIB id.
-    """
-    synced = (record.get("syncedLyrics") or "").strip()
-    if record.get("instrumental") or not synced:
-        return None
-    lines = parse_synced_lyrics(synced)
-    lyric_ms = lyric_duration_ms(lines)
-    if lyric_ms is None or not any(line.text for line in lines):
-        return None
+def _title_rank(record: dict, track_name: str) -> int | None:
+    """Return 0 for the same title, 1 for the title without a ' - ' suffix, or None."""
     record_title = normalize_name(str(record.get("trackName") or record.get("name") or ""))
     wanted_title = normalize_name(track_name)
     wanted_base = normalize_name(base_title(track_name))
-    if record_title == wanted_title:
-        title_rank = 0
-    elif record_title == wanted_base:
-        title_rank = 1
-    else:
+    if not record_title or not wanted_title:
         return None
+    if record_title == wanted_title:
+        return 0
+    if wanted_base and record_title == wanted_base:
+        return 1
+    return None
+
+
+def _artist_rank(record: dict, artist_name: str) -> int | None:
+    """Return 0 for the same artist, 1 when one name contains the other, or None."""
     record_artist = normalize_name(str(record.get("artistName") or ""))
     wanted_artist = normalize_name(artist_name)
     first_artist = normalize_name(artist_name.split(",")[0])
-    if record_artist == wanted_artist:
-        artist_rank = 0
-    elif first_artist and first_artist in record_artist:
-        artist_rank = 1
-    else:
-        artist_rank = 2
-    album_rank = 0 if normalize_name(str(record.get("albumName") or "")) == normalize_name(album_name) else 1
-    record_id = int(record.get("id") or 0)
-    return (title_rank, artist_rank, abs(duration_ms - lyric_ms), album_rank, record_id)
+    if not record_artist or not (wanted_artist or first_artist):
+        return None
+    if wanted_artist and record_artist == wanted_artist:
+        return 0
+    if first_artist and (first_artist in record_artist or record_artist in first_artist):
+        return 1
+    return None
+
+
+def _album_rank(record: dict, album_name: str) -> int:
+    """Return 0 for the same album, 1 when one name contains the other, otherwise 2."""
+    record_album = normalize_name(str(record.get("albumName") or ""))
+    wanted_album = normalize_name(album_name)
+    if not record_album or not wanted_album:
+        return 2
+    if record_album == wanted_album:
+        return 0
+    if wanted_album in record_album or record_album in wanted_album:
+        return 1
+    return 2
+
+
+def _stored_duration_delta_ms(record: dict, duration_ms: int) -> int | None:
+    """Return the gap between LRCLIB's stored duration and Spotify, in milliseconds."""
+    stored = record.get("duration")
+    if not isinstance(stored, (int, float)):
+        return None
+    return abs(int(stored) * 1000 - duration_ms)
+
+
+def _synced_lines(record: dict) -> tuple[LyricLine, ...] | None:
+    """Return timed lyric lines when the record has synced text."""
+    if record.get("instrumental"):
+        return None
+    lines = parse_synced_lyrics(record.get("syncedLyrics") or "")
+    if not lines or not any(line.text for line in lines):
+        return None
+    return lines
 
 
 def choose_synced_record(
@@ -295,9 +327,10 @@ def choose_synced_record(
     """Pick one synced record from the LRCLIB results.
 
     Purpose:
-        Keep records whose title matches, then prefer the closer artist, then
-        the lyric file whose last timestamp is closest to Spotify's duration,
-        then the same album. LRCLIB's stored duration field is not used.
+        Keep synced records with the same title and artist. Prefer the same
+        album, then the LRCLIB stored duration closest to Spotify. When every
+        stored duration is outside the threshold, use the last lyric timestamp
+        the same way.
 
     Parameters:
         records (list[dict]): JSON objects from GET /api/search and /api/get.
@@ -307,33 +340,65 @@ def choose_synced_record(
         duration_ms (int): Spotify item.duration_ms.
 
     Returns:
-        tuple[dict, int, str] | None: The winning record, how many synced
-        title matches were ranked, and a short reason. None when no synced
-        record has a matching title.
+        tuple[dict, int, str] | None: The winning record, how many title and
+        artist matches were considered, and a short reason. None when none of
+        those matches are within the duration threshold.
 
     Precondition:
         Each record is a dict. duration_ms is positive.
 
     Postcondition:
-        The returned record, when present, has synced lyrics and a matching
-        title. records is not modified.
+        The returned record, when present, matches the title and artist, and
+        either its stored duration or its last lyric timestamp is within
+        DURATION_CHOICE_THRESHOLD_MS of Spotify. records is not modified.
     """
-    ranked: list[tuple[tuple[int, int, int, int, int], dict]] = []
+    pool: list[tuple[int, int, int, dict, tuple[LyricLine, ...]]] = []
     for record in records:
-        key = _rank_key(record, track_name, artist_name, album_name, duration_ms)
-        if key is not None:
-            ranked.append((key, record))
-    if not ranked:
+        lines = _synced_lines(record)
+        title_rank = _title_rank(record, track_name)
+        artist_rank = _artist_rank(record, artist_name)
+        if lines is None or title_rank is None or artist_rank is None:
+            continue
+        pool.append((_album_rank(record, album_name), title_rank, artist_rank, record, lines))
+    if not pool:
         return None
-    ranked.sort(key=lambda item: item[0])
-    winner_key, winner = ranked[0]
-    title_rank, artist_rank, delta_ms, album_rank, _record_id = winner_key
+
+    stored_hits: list[tuple[tuple[int, int, int, int, int], dict]] = []
+    for album_rank, title_rank, artist_rank, record, _lines in pool:
+        delta = _stored_duration_delta_ms(record, duration_ms)
+        if delta is None or delta > DURATION_CHOICE_THRESHOLD_MS:
+            continue
+        stored_hits.append(((title_rank, artist_rank, album_rank, delta, int(record.get("id") or 0)), record))
+    if stored_hits:
+        stored_hits.sort(key=lambda item: item[0])
+        winner = stored_hits[0][1]
+        title_rank, artist_rank, album_rank, delta, _record_id = stored_hits[0][0]
+        reason = (
+            f"title rank {title_rank}, artist rank {artist_rank}, album rank {album_rank}, "
+            f"stored duration is {format_ms(delta)} from Spotify"
+        )
+        return winner, len(pool), reason
+
+    lyric_hits: list[tuple[tuple[int, int, int, int, int], dict]] = []
+    for album_rank, title_rank, artist_rank, record, lines in pool:
+        lyric_ms = lyric_duration_ms(lines)
+        if lyric_ms is None:
+            continue
+        delta = abs(duration_ms - lyric_ms)
+        if delta > DURATION_CHOICE_THRESHOLD_MS:
+            continue
+        lyric_hits.append(((title_rank, artist_rank, album_rank, delta, int(record.get("id") or 0)), record))
+    if not lyric_hits:
+        return None
+    lyric_hits.sort(key=lambda item: item[0])
+    winner = lyric_hits[0][1]
+    title_rank, artist_rank, album_rank, delta, _record_id = lyric_hits[0][0]
     reason = (
-        f"title rank {title_rank}, artist rank {artist_rank}, "
-        f"last lyric is {format_ms(delta_ms)} from Spotify's duration, "
-        f"album rank {album_rank}"
+        f"stored durations were outside {DURATION_CHOICE_THRESHOLD_MS} ms; "
+        f"title rank {title_rank}, artist rank {artist_rank}, album rank {album_rank}, "
+        f"last lyric is {format_ms(delta)} from Spotify"
     )
-    return winner, len(ranked), reason
+    return winner, len(pool), reason
 
 
 class LrcLibClient:
@@ -581,24 +646,24 @@ class LrcLibClient:
             Each /api/get record not already in the search list is included.
             The console lists each record's stored duration and last lyric time.
         """
-        print()
-        print("LRCLIB search from Spotify:")
-        print(f"  track_name: {track_name}")
-        print(f"  artist_name: {artist_name}")
-        print(f"  album_name: {album_name or '(empty)'}")
-        print(f"  Spotify duration: {format_ms(duration_ms)} ({duration_ms} ms)")
+        _debug()
+        _debug("LRCLIB search from Spotify:")
+        _debug(f"  track_name: {track_name}")
+        _debug(f"  artist_name: {artist_name}")
+        _debug(f"  album_name: {album_name or '(empty)'}")
+        _debug(f"  Spotify duration: {format_ms(duration_ms)} ({duration_ms} ms)")
         duration_sec = max(1, min(3600, int(round(duration_ms / 1000))))
         signature = self.get_by_signature(track_name, artist_name, album_name, duration_sec)
         search_track = base_title(track_name)
         search_artist = artist_name.split(",")[0].strip()
-        print()
-        print("Ranking synced records by title, then artist, then last lyric timestamp, then album.")
-        print(f"Search track_name: {search_track}")
-        print(f"Search artist_name: {search_artist}")
+        _debug()
+        _debug("Ranking synced records by title, artist, album, then stored duration.")
+        _debug(f"Search track_name: {search_track}")
+        _debug(f"Search artist_name: {search_artist}")
         found = self.search(search_track, search_artist)
         if signature and all(record.get("id") != signature.get("id") for record in found):
             found = [signature, *found]
-        _print_search_durations(found, duration_ms)
+        _print_search_durations(found, track_name, artist_name, album_name, duration_ms)
         return found
 
 
@@ -662,9 +727,9 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
         choices.append((int(record["id"]), record, lyric_ms))
     if not choices:
         return None
-    choices.sort(key=lambda item: abs(duration_ms - item[2]))
+    choices.sort(key=lambda item: _stored_duration_delta_ms(item[1], duration_ms) or abs(duration_ms - item[2]))
     print()
-    print(f"The closest last lyric timestamp is more than {DURATION_CHOICE_THRESHOLD_MS} ms from Spotify's duration.")
+    print(f"The closest stored duration and last lyric are more than {DURATION_CHOICE_THRESHOLD_MS} ms from Spotify.")
     print("Enter one LRCLIB id. The same Spotify track will reuse it.")
     for record_id, record, lyric_ms in choices:
         name = record.get("trackName") or record.get("name") or ""
@@ -787,6 +852,83 @@ class LyricLookup:
         self._match: LyricMatch | None = None
         self._miss_key: str | None = None
 
+    def needs_lookup(self, now: dict | None) -> bool:
+        """Return whether this playback still needs an LRCLIB record chosen.
+
+        Purpose:
+            Let the terminal ask for an LRCLIB id before the live lyric line starts.
+
+        Parameters:
+            now (dict | None): Spotify currently-playing body, or None.
+
+        Returns:
+            bool: True when a new Spotify track has no locked record yet.
+
+        Precondition:
+            now is None or a currently-playing object.
+
+        Postcondition:
+            No network call is made and no record is locked.
+        """
+        query = spotify_track_query(now)
+        if query is None:
+            return False
+        if query["key"] == self._key and self._match is not None:
+            return False
+        if query["key"] == self._miss_key:
+            return False
+        return True
+
+    def current_line(self, now: dict | None, progress_ms: int) -> str:
+        """Return the lyric line for a playback position without printing diagnostics.
+
+        Purpose:
+            Reuse the locked LRCLIB record and read the line at progress_ms.
+            LRCLIB is contacted only when the Spotify track id changes.
+
+        Parameters:
+            now (dict | None): Spotify currently-playing body, or None.
+            progress_ms (int): Playback position to display, in milliseconds.
+
+        Returns:
+            str: The current non-empty lyric line, or an empty string when
+            playback is before the first line or no synced record is locked.
+
+        Precondition:
+            progress_ms is >= 0.
+
+        Postcondition:
+            The locked record is unchanged when the Spotify track id is unchanged.
+        """
+        self._ensure(now)
+        if self._match is None:
+            return ""
+        current, _upcoming = line_at(self._match.lines, progress_ms)
+        if current is None:
+            return ""
+        return current.text
+
+    def _ensure(self, now: dict | None) -> None:
+        """Lock an LRCLIB record for the Spotify track in now, if one can be chosen."""
+        query = spotify_track_query(now)
+        if query is None:
+            self._key = None
+            self._match = None
+            return
+        if query["key"] == self._key and self._match is not None:
+            return
+        if query["key"] == self._miss_key:
+            return
+        match = self._resolve(query)
+        if match is None:
+            self._key = None
+            self._match = None
+            self._miss_key = query["key"]
+            return
+        self._match = match
+        self._key = query["key"]
+        self._miss_key = None
+
     def show(self, now: dict | None) -> None:
         """Print the locked LRCLIB match and the line for this progress_ms.
 
@@ -811,20 +953,20 @@ class LyricLookup:
         """
         query = spotify_track_query(now)
         if query is None:
-            print("No Spotify track to look up on LRCLIB.")
+            _debug("No Spotify track to look up on LRCLIB.")
             return
         if query["key"] == self._key and self._match is not None:
             _print_lines(self._match, query["progress_ms"])
             return
         if query["key"] == self._miss_key:
-            print("No synced LRCLIB lyrics for this track (not asking again).")
+            _debug("No synced LRCLIB lyrics for this track (not asking again).")
             return
         match = self._resolve(query)
         if match is None:
             self._key = None
             self._match = None
             self._miss_key = query["key"]
-            print("LRCLIB has no synced lyrics with a matching title.")
+            _debug("LRCLIB has no synced lyrics with a matching title.")
             return
         self._match = match
         self._key = query["key"]
@@ -857,8 +999,8 @@ class LyricLookup:
             record = self.client.get_by_id(saved_id)
             match = _match_from_record(record, query["duration_ms"], "saved", 1, "saved LRCLIB id for this Spotify track") if record else None
             if match is not None:
-                print(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
-                print(lrclib_track_url(saved_id))
+                _debug(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
+                _debug(lrclib_track_url(saved_id))
                 return match
             self.choices.forget(query["key"])
         found = self.client.candidate_records(
@@ -877,7 +1019,7 @@ class LyricLookup:
         if chosen is not None:
             record, count, reason = chosen
             match = _match_from_record(record, query["duration_ms"], "search", count, reason)
-            if match is not None and match.duration_delta_ms <= DURATION_CHOICE_THRESHOLD_MS:
+            if match is not None:
                 return match
         picked = _prompt_lrclib_id(found, query["duration_ms"])
         if picked is None:
@@ -934,6 +1076,25 @@ def spotify_track_query(now: dict | None) -> dict | None:
     }
 
 
+def _display_rank(
+    record: dict,
+    track_name: str,
+    artist_name: str,
+    album_name: str,
+    spotify_duration_ms: int,
+) -> tuple[int, int, int, int, int]:
+    """Sort the printed list by title, artist, album, then stored-duration gap."""
+    title_rank = _title_rank(record, track_name)
+    artist_rank = _artist_rank(record, artist_name)
+    return (
+        title_rank if title_rank is not None else 9,
+        artist_rank if artist_rank is not None else 9,
+        _album_rank(record, album_name),
+        _stored_duration_delta_ms(record, spotify_duration_ms) or 10**12,
+        int(record.get("id") or 0),
+    )
+
+
 def _lyric_delta_ms(record: dict, spotify_duration_ms: int) -> int:
     """Gap between Spotify's duration and this record's last lyric timestamp.
 
@@ -947,26 +1108,36 @@ def _lyric_delta_ms(record: dict, spotify_duration_ms: int) -> int:
 
 def _print_lrcib_request(path: str, params: dict[str, str | int]) -> None:
     """Print the LRCLIB path and query fields before a GET. The URL is not printed."""
-    print()
-    print(f"LRCLIB GET {path}")
+    _debug()
+    _debug(f"LRCLIB GET {path}")
     if params:
         for key, value in params.items():
-            print(f"  {key}: {value}")
+            _debug(f"  {key}: {value}")
 
 
-def _print_search_durations(records: list[dict], spotify_duration_ms: int) -> None:
+def _print_search_durations(
+    records: list[dict],
+    track_name: str,
+    artist_name: str,
+    album_name: str,
+    spotify_duration_ms: int,
+) -> None:
     """Print each record's stored duration and the last lyric timestamp."""
-    print(f"LRCLIB returned {len(records)} record(s). Spotify duration is {format_ms(spotify_duration_ms)}:")
+    _debug(f"LRCLIB returned {len(records)} record(s). Spotify duration is {format_ms(spotify_duration_ms)}:")
     if not records:
         return
-    ordered = sorted(records, key=lambda record: _lyric_delta_ms(record, spotify_duration_ms))
+    ordered = sorted(
+        records,
+        key=lambda record: _display_rank(record, track_name, artist_name, album_name, spotify_duration_ms),
+    )
     for record in ordered:
         stored = record.get("duration")
         stored_shown = f"{int(stored)}s" if isinstance(stored, (int, float)) else "(missing)"
+        stored_delta = _stored_duration_delta_ms(record, spotify_duration_ms)
+        stored_delta_shown = format_ms(stored_delta) if stored_delta is not None else "n/a"
         lines = parse_synced_lyrics(record.get("syncedLyrics") or "")
         lyric_ms = lyric_duration_ms(lines)
         lyric_shown = format_ms(lyric_ms) if lyric_ms is not None else "(no synced lines)"
-        delta_shown = format_ms(abs(spotify_duration_ms - lyric_ms)) if lyric_ms is not None else "n/a"
         if record.get("instrumental"):
             kind = "instrumental"
         elif lyric_ms is None:
@@ -975,26 +1146,27 @@ def _print_search_durations(records: list[dict], spotify_duration_ms: int) -> No
             kind = "synced"
         name = record.get("trackName") or record.get("name") or ""
         artist = record.get("artistName") or ""
-        print(
-            f"  id {record.get('id')}: delta {delta_shown}, stored duration {stored_shown}, "
-            f"last lyric {lyric_shown}, {kind}, {name} — {artist}"
+        album = record.get("albumName") or ""
+        _debug(
+            f"  id {record.get('id')}: stored delta {stored_delta_shown}, stored duration {stored_shown}, "
+            f"last lyric {lyric_shown}, {kind}, {name} — {artist} — {album}"
         )
         if isinstance(record.get("id"), int):
-            print(f"    {lrclib_track_url(record['id'])}")
+            _debug(f"    {lrclib_track_url(record['id'])}")
 
 
 def _print_match(match: LyricMatch, duration_ms: int) -> None:
     """Print which LRCLIB record was locked and why."""
-    print()
-    print(
+    _debug()
+    _debug(
         f"LRCLIB {match.source} id {match.record_id}: "
         f"{match.track_name} — {match.artist_name} — {match.album_name}"
     )
-    print(lrclib_track_url(match.record_id))
-    print(f"LRCLIB stored duration: {match.duration_sec}s (not used to choose)")
-    print(f"Last lyric timestamp: {format_ms(match.lyric_duration_ms)}")
-    print(f"Spotify duration: {format_ms(duration_ms)}")
-    print(
+    _debug(lrclib_track_url(match.record_id))
+    _debug(f"LRCLIB stored duration: {match.duration_sec}s")
+    _debug(f"Last lyric timestamp: {format_ms(match.lyric_duration_ms)}")
+    _debug(f"Spotify duration: {format_ms(duration_ms)}")
+    _debug(
         f"Last lyric is {format_ms(match.duration_delta_ms)} from Spotify's duration. "
         f"{match.candidate_count} synced candidate(s). {match.reason}."
     )
@@ -1004,8 +1176,8 @@ def _print_lines(match: LyricMatch, progress_ms: int) -> None:
     """Print the current line and the next line for this playback position."""
     current, upcoming = line_at(match.lines, progress_ms)
     if current is None:
-        print(f"At {progress_ms} ms: before the first lyric line.")
+        _debug(f"At {progress_ms} ms: before the first lyric line.")
     else:
-        print(f"At {progress_ms} ms: {current.text}")
+        _debug(f"At {progress_ms} ms: {current.text}")
     if upcoming is not None:
-        print(f"Next at {upcoming.time_ms} ms: {upcoming.text}")
+        _debug(f"Next at {upcoming.time_ms} ms: {upcoming.text}")

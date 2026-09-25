@@ -11,7 +11,9 @@ The function and URL flow is in spotify_flow.md.
 from __future__ import annotations
 
 import sys
+import time
 
+import lrclib_client
 from lrclib_client import LyricLookup
 from spotify_client.auth import (
     TOKEN_PATH,
@@ -22,7 +24,17 @@ from spotify_client.auth import (
     prompt,
     save_tokens,
 )
-from spotify_client.player import print_now_playing, print_profile
+from spotify_client.player import fetch_now_playing, print_now_playing, print_profile
+
+# True prints Spotify JSON and the LRCLIB search, then waits for Enter.
+# False hides those dumps and follows the current lyric line on its own.
+PRINT_API_DETAILS = False
+# How often to ask Spotify for the real playback position.
+SPOTIFY_POLL_SECONDS = 1.0
+
+# So we keep a local clock to help with lyric switching if between Spotify polls.
+# How often to redraw the lyric line from the local clock between Spotify polls.
+LYRIC_DISPLAY_SECONDS = 0.1
 
 
 def watch_keyboard(session: dict, lyrics: LyricLookup) -> None:
@@ -57,6 +69,83 @@ def watch_keyboard(session: dict, lyrics: LyricLookup) -> None:
             return
         session, now = print_now_playing(session)
         lyrics.show(now)
+
+
+def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
+    """Redraw the current lyric line from a local clock, corrected by Spotify.
+
+    Purpose:
+        Stay aligned with playback without calling Spotify on every redraw.
+        Spotify is polled about once per SPOTIFY_POLL_SECONDS. Between polls,
+        progress_ms advances by the time spent only while Spotify reported
+        that audio is playing. LRCLIB is called when the track id changes.
+
+    Parameters:
+        session (dict): Saved Spotify login.
+        lyrics (LyricLookup): Cache that maps a playback position to a lyric line.
+
+    Returns:
+        None.
+
+    Precondition:
+        session can call the currently-playing endpoint.
+
+    Postcondition:
+        The latest lyric line and playback position are on the terminal.
+        The function returns when the user presses Ctrl+C.
+    """
+    session, now = fetch_now_playing(session)
+    if lyrics.needs_lookup(now):
+        lyrics.current_line(now, _progress_ms(now))
+    print("Following the current lyric line. Press Ctrl+C to stop.")
+    anchor_progress = _progress_ms(now)
+    anchor_at = time.monotonic()
+    playing = bool(now and now.get("is_playing"))
+    last_poll = anchor_at
+    last_text: str | None = None
+    while True:
+        if time.monotonic() - last_poll >= SPOTIFY_POLL_SECONDS:
+            session, now = fetch_now_playing(session)
+            last_poll = time.monotonic()
+            anchor_progress = _progress_ms(now)
+            anchor_at = last_poll
+            playing = bool(now and now.get("is_playing"))
+        elapsed_ms = int((time.monotonic() - anchor_at) * 1000) if playing else 0
+        progress = anchor_progress + elapsed_ms
+        duration = _duration_ms(now)
+        if duration is not None:
+            progress = min(progress, duration)
+        if lyrics.needs_lookup(now):
+            print()
+            lyrics.current_line(now, progress)
+        text = lyrics.current_line(now, progress)
+        if text != last_text and last_text is not None:
+            print()
+        last_text = text
+        if now is None:
+            shown = "Nothing is currently playing."
+        elif text:
+            shown = text
+        else:
+            shown = "Before the first lyric line."
+        print(f"\r{progress} ms  {shown}   ", end="", flush=True)
+        time.sleep(LYRIC_DISPLAY_SECONDS)
+
+
+def _progress_ms(now: dict | None) -> int:
+    """Return Spotify's progress_ms, or 0 when nothing is playing."""
+    if not now or not isinstance(now.get("progress_ms"), int):
+        return 0
+    return now["progress_ms"]
+
+
+def _duration_ms(now: dict | None) -> int | None:
+    """Return the track length in milliseconds, or None when Spotify sent no item."""
+    item = (now or {}).get("item") or {}
+    duration = item.get("duration_ms")
+    if isinstance(duration, int):
+        return duration
+    return None
 
 
 def main() -> None:
@@ -97,11 +186,15 @@ def main() -> None:
         print(f"Tokens saved to {TOKEN_PATH}")
         print_token_summary(token)
 
+    lrclib_client.VERBOSE = PRINT_API_DETAILS
     lyrics = LyricLookup()
-    session = print_profile(session)
-    session, now = print_now_playing(session)
-    lyrics.show(now)
-    watch_keyboard(session, lyrics)
+    session = print_profile(session, verbose=PRINT_API_DETAILS)
+    if PRINT_API_DETAILS:
+        session, now = print_now_playing(session)
+        lyrics.show(now)
+        watch_keyboard(session, lyrics)
+        return
+    follow_lyrics(session, lyrics)
 
 
 if __name__ == "__main__":

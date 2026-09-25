@@ -124,7 +124,32 @@ def song_summary(now: dict | None) -> str:
     return f"Now playing: {title}"
 
 
-def print_profile(session: dict) -> dict:
+def fetch_now_playing(session: dict) -> tuple[dict, dict | None]:
+    """Read the currently playing item without printing it.
+
+    Purpose:
+        Poll Spotify for progress_ms while a lyric line is followed locally.
+
+    Parameters:
+        session (dict): Saved login passed to spotify_get.
+
+    Returns:
+        tuple[dict, dict | None]: The session to keep using, and the playback
+        body. The body is None when Spotify returns 204 or an empty item.
+
+    Precondition:
+        session can call API_NOW_PLAYING.
+
+    Postcondition:
+        Nothing is written to stdout. The returned session can be polled again.
+    """
+    session, status, now = spotify_get(session, API_NOW_PLAYING)
+    if status == 204 or not now:
+        return session, None
+    return session, now
+
+
+def print_profile(session: dict, *, verbose: bool = True) -> dict:
     """Read and print the signed-in user's profile.
 
     Purpose:
@@ -151,7 +176,8 @@ def print_profile(session: dict) -> dict:
         raise RuntimeError("Spotify returned an empty profile.")
     name = me.get("display_name") or me.get("id")
     print(f"Signed in as: {name} ({me.get('id')})")
-    print_json("GET /v1/me  (profile)", me)
+    if verbose:
+        print_json("GET /v1/me  (profile)", me)
     return session
 
 
@@ -178,7 +204,8 @@ def print_now_playing(session: dict) -> tuple[dict, dict | None]:
         A 204 response is printed as {"status": 204, "body": null}.
         The returned session can be passed to the next API call.
     """
-    session, status, now = spotify_get(session, API_NOW_PLAYING)
+    session, now = fetch_now_playing(session)
+    status = 204 if now is None else 200
     print(song_summary(now))
     if status == 204 or not now:
         print_json("GET /v1/me/player/currently-playing", {"status": 204, "body": None})
