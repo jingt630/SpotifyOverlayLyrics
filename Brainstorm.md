@@ -36,3 +36,34 @@ Create the overlay extension where the background is transparent.
 4. Make the overlay surface functionable where user can enable always on top of screen overlay no matter whatever application the user opens. The close and minimize function should also be created.
 
 5. rework on connecting to user's spotify account GUI to create the necessary visual for it.
+
+
+## Visual Thoughts:
+
+- Top Bar: must be aligned to center of the overlay
+    - Setting:
+        - allow to change the language of the application
+        - swtich from two line mode to one line mode and vice versa
+        - change the font size of the lyrics
+    - lock:
+        - make the overlay not sticky on top anymore
+    - Prev, Pause, Next (see if spotify api allow this)
+    -  Minimize
+    - Close overlay application
+    - Currently Playing/Next in queue Display Section (ok nvm scratch this part)
+
+Only when the user hover over the overlay, the background of the overlay would go from transparent to somewhat transparent black plus the top bar will be display. (Except for the Current display section, it will remain visible all the time like the lyrics. nvm don't do this yet)
+
+- Lyric Content:
+    - Two line Mode:
+        - first line is aligned to the left, second line is aligned to the right
+        - the current line will be highlighted
+        - the next line will be replaced in the same location as the already sung prev line
+          this would be: line 1 is lyric 10 and line 2 is lyric 11. When we are on lyric 11, we highlight line 2. Line 1 is lyric 10 so it's done alr, then we render lyric 12 to be on line 1 instead of rendering lyric 11 on line 1 and lyric 12 on line 2 so the lyric doesn't seem to be jumping for the users.
+    - One line Mode:
+        - aligned to the center like the top bar
+
+- Dimension of the overlay:
+    - be adoptative according to how much space the lyric content needs.
+    - has a min and max that is depending on the user's monitor size
+    - user can't adjust the dim of the overlay since it's suppose to be transparent anyway
