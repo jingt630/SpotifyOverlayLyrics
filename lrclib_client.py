@@ -39,6 +39,8 @@ LINE_PATTERN = re.compile(r"\[(\d+):(\d+(?:\.\d+)?)\]")
 DURATION_CHOICE_THRESHOLD_MS = 4000
 # connect_spotify.py sets this. False hides search dumps and raw lyric details.
 VERBOSE = True
+# True while the glass overlay is the place that asks the user to pick an LRCLIB id.
+OVERLAY_CHOICES = False
 
 
 def _debug(*args, **kwargs) -> None:
@@ -84,6 +86,21 @@ class LyricWindow:
 
     singing: LyricLine
     next_line: LyricLine | None
+
+
+@dataclass(frozen=True)
+class LyricCandidate:
+    """One synced LRCLIB record the user can preview and choose.
+
+    Attributes:
+        record_id (int): LRCLIB id.
+        label (str): Title, artist, album, and duration, for the overlay list.
+        url (str): Public track page, opened in the browser for a preview.
+    """
+
+    record_id: int
+    label: str
+    url: str
 
 
 @dataclass(frozen=True)
@@ -580,8 +597,8 @@ class LrcLibClient:
                         return 404, json.loads(detail) if detail else None
                     except json.JSONDecodeError:
                         return 404, None
-                if exc.code == 429 and attempt == 1:
-                    wait = min(int(exc.headers.get("Retry-After") or "1"), 5)
+                if exc.code in (429, 503) and attempt == 1:
+                    wait = min(int(exc.headers.get("Retry-After") or "2"), 2)
                     time.sleep(wait)
                     continue
                 raise LrcLibError(f"LRCLIB request failed ({exc.code}): {detail}") from exc
@@ -807,6 +824,50 @@ def _match_from_record(
     )
 
 
+def synced_choice_rows(records: list[dict], duration_ms: int) -> list[tuple[LyricCandidate, dict]]:
+    """Return synced LRCLIB records closest to the Spotify duration.
+
+    Purpose:
+        Build the list shown when automatic matching cannot pick one record.
+        The overlay uses the first five. The full lyrics stay on the record
+        dict in memory and are not written to disk.
+
+    Parameters:
+        records (list[dict]): Records from /api/search and /api/get.
+        duration_ms (int): Spotify item.duration_ms.
+
+    Returns:
+        list[tuple[LyricCandidate, dict]]: Candidates and the raw records,
+        closest duration first.
+
+    Precondition:
+        duration_ms is positive.
+
+    Postcondition:
+        Each candidate url is the public LRCLIB track page. records is unchanged.
+    """
+    ranked: list[tuple[int, dict, int]] = []
+    for record in records:
+        if record.get("instrumental"):
+            continue
+        lines = parse_synced_lyrics(record.get("syncedLyrics") or "")
+        lyric_ms = lyric_duration_ms(lines)
+        if lyric_ms is None or not any(line.text for line in lines):
+            continue
+        ranked.append((int(record["id"]), record, lyric_ms))
+    ranked.sort(key=lambda item: _stored_duration_delta_ms(item[1], duration_ms) or abs(duration_ms - item[2]))
+    rows: list[tuple[LyricCandidate, dict]] = []
+    for record_id, record, lyric_ms in ranked:
+        name = str(record.get("trackName") or record.get("name") or "")
+        artist = str(record.get("artistName") or "")
+        album = str(record.get("albumName") or "")
+        stored = record.get("duration")
+        clock_ms = int(stored) * 1000 if isinstance(stored, (int, float)) else lyric_ms
+        label = f"{name} — {artist} · {album} · {format_clock(clock_ms)}"
+        rows.append((LyricCandidate(record_id, label, lrclib_track_url(record_id)), record))
+    return rows
+
+
 def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
     """Ask once for an LRCLIB id when automatic duration matching is too far.
 
@@ -1012,6 +1073,12 @@ class LyricLookup:
         self._key: str | None = None
         self._match: LyricMatch | None = None
         self._miss_key: str | None = None
+        self._pending_key: str | None = None
+        self._pending: list[LyricCandidate] = []
+        self._pending_records: dict[int, dict] = {}
+        self._pending_query: dict | None = None
+        self._busy_key: str | None = None
+        self._busy_until = 0.0
         self.singing_line: LyricLine | None = None
         self.next_line: LyricLine | None = None
         self._shown_track: str | None = None
@@ -1170,12 +1237,32 @@ class LyricLookup:
         if query is None:
             self._key = None
             self._match = None
+            self._clear_pending()
             return
         if query["key"] == self._key and self._match is not None:
             return
+        if query["key"] == self._pending_key and self._pending:
+            return
+        if query["key"] == self._busy_key and time.monotonic() < self._busy_until:
+            return
         if query["key"] == self._miss_key:
             return
-        match = self._resolve(query)
+        if self._pending_key and self._pending_key != query["key"]:
+            self._clear_pending()
+        try:
+            match = self._resolve(query)
+        except LrcLibError:
+            self._clear_pending()
+            self._key = None
+            self._match = None
+            self._busy_key = query["key"]
+            self._busy_until = time.monotonic() + 20
+            return
+        if self._pending_key == query["key"]:
+            self._key = None
+            self._match = None
+            self._miss_key = None
+            return
         if match is None:
             self._key = None
             self._match = None
@@ -1184,6 +1271,74 @@ class LyricLookup:
         self._match = match
         self._key = query["key"]
         self._miss_key = None
+        self._busy_key = None
+
+    def pending_choices(self, track_id: str | None) -> list[LyricCandidate] | None:
+        """Return the overlay choices for this Spotify track, if a pick is waiting."""
+        if track_id != self._pending_key or not self._pending:
+            return None
+        return list(self._pending)
+
+    def is_busy(self, track_id: str | None) -> bool:
+        """Return whether LRCLIB asked us to wait before looking up this track again."""
+        return track_id == self._busy_key and time.monotonic() < self._busy_until
+
+    def accept_candidate(self, record_id: int) -> None:
+        """Lock the LRCLIB record the user chose in the overlay.
+
+        Purpose:
+            Save the Spotify track id to that LRCLIB id and keep the synced
+            lines in memory for the rest of this song. The lyric text is not
+            written to disk.
+
+        Parameters:
+            record_id (int): One of the ids currently offered.
+
+        Returns:
+            None.
+
+        Precondition:
+            record_id is one of pending_choices.
+
+        Postcondition:
+            The choice map contains this Spotify track. pending_choices is empty.
+            Later line changes read the stored timestamps and do not call LRCLIB.
+        """
+        query = self._pending_query
+        record = self._pending_records.get(record_id)
+        if query is None or record is None:
+            return
+        match = _match_from_record(
+            record,
+            query["duration_ms"],
+            "chosen",
+            1,
+            "LRCLIB id chosen in the overlay",
+        )
+        if match is None:
+            return
+        self.choices.put(
+            query["key"],
+            record_id,
+            query["track_name"],
+            query["artist_name"],
+            query["album_name"],
+            query["duration_ms"],
+        )
+        self._match = match
+        self._key = query["key"]
+        self._miss_key = None
+        self._busy_key = None
+        self._clear_pending()
+        self._pair_on_screen = False
+        self._status = None
+
+    def _clear_pending(self) -> None:
+        """Drop an in-progress candidate list."""
+        self._pending_key = None
+        self._pending = []
+        self._pending_records = {}
+        self._pending_query = None
 
     def show(self, now: dict | None) -> None:
         """Print the locked LRCLIB match and the line for this progress_ms.
@@ -1218,6 +1373,8 @@ class LyricLookup:
             _debug("No synced LRCLIB lyrics for this track (not asking again).")
             return
         match = self._resolve(query)
+        if self._pending_key == query["key"]:
+            return
         if match is None:
             self._key = None
             self._match = None
@@ -1294,8 +1451,18 @@ class LyricLookup:
                 )
                 _debug(f"Saved LRCLIB id {match.record_id} for this Spotify track.")
                 return match
-        picked = _prompt_lrclib_id(found, query["duration_ms"])
-        if picked is None:
+        rows = synced_choice_rows(found, query["duration_ms"])
+        if not rows:
+            return None
+        if not OVERLAY_CHOICES and sys.stdin is not None and sys.stdin.isatty():
+            picked = _prompt_lrclib_id(found, query["duration_ms"])
+            if picked is None:
+                return None
+        else:
+            self._pending_key = query["key"]
+            self._pending_query = query
+            self._pending = [candidate for candidate, _record in rows[:5]]
+            self._pending_records = {candidate.record_id: record for candidate, record in rows[:5]}
             return None
         self.choices.put(
             query["key"],

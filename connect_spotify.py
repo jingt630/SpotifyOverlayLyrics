@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import lrclib_client
 from lyric_overlay import LyricOverlay
-from lrclib_client import LyricLookup, LyricWindow, format_clock
+from lrclib_client import LrcLibError, LyricLookup, LyricWindow, format_clock
 from spotify_client.auth import (
     TOKEN_PATH,
     authorize,
@@ -212,6 +212,18 @@ def _lyric_print(lyrics: LyricLookup, now: dict | None, progress_ms: int) -> Lyr
         return message
     track = _track_id(now)
     window = lyrics.window_at(now, progress_ms)
+    if lyrics.is_busy(track):
+        message = "LRCLIB is busy. Retrying…"
+        if lyrics.status_is_showing(message, track):
+            return None
+        lyrics.note_status(message, track)
+        return message
+    pending = lyrics.pending_choices(track)
+    if pending is not None:
+        if lyrics.status_is_showing("choose", track):
+            return None
+        lyrics.note_status("choose", track)
+        return pending
     if window is None:
         message = "No synced lyrics for this track."
         if lyrics.status_is_showing(message, track):
@@ -324,7 +336,7 @@ class OverlayFollow(QObject):
         self.last_poll = 0.0
         self.last_track: str | None = None
         self._now: dict | None = None
-        self._shown: tuple[str, str] | None = None
+        self._shown: tuple | None = None
         self.timer = QTimer(self)
         self.timer.setInterval(int(LYRIC_DISPLAY_SECONDS * 1000))
         self.timer.timeout.connect(self._tick)
@@ -342,8 +354,15 @@ class OverlayFollow(QObject):
         duration = _duration_ms(now)
         if duration is not None:
             progress = min(progress, duration)
-        shown = _lyric_print(self.lyrics, now, progress)
+        try:
+            shown = _lyric_print(self.lyrics, now, progress)
+        except LrcLibError:
+            shown = "LRCLIB is busy. Retrying…"
         if shown is None:
+            return
+        if isinstance(shown, list):
+            self._shown = ("choose", _track_id(now) or "")
+            self.window.set_choices(shown, self.lyrics.accept_candidate)
             return
         if isinstance(shown, str):
             pair = (shown, "")
@@ -467,6 +486,7 @@ def main() -> None:
         print_token_summary(token)
 
     lrclib_client.VERBOSE = PRINT_API_DETAILS
+    lrclib_client.OVERLAY_CHOICES = not PRINT_API_DETAILS
     lyrics = LyricLookup()
     session = print_profile(session, verbose=PRINT_API_DETAILS)
     if PRINT_API_DETAILS:
