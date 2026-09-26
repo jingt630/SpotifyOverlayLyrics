@@ -16,6 +16,10 @@ from spotify_client.auth import print_json, refresh_session
 API_ME = "https://api.spotify.com/v1/me"
 # Web API call that returns the track currently playing for that user.
 API_NOW_PLAYING = "https://api.spotify.com/v1/me/player/currently-playing"
+API_NEXT = "https://api.spotify.com/v1/me/player/next"
+API_PREVIOUS = "https://api.spotify.com/v1/me/player/previous"
+API_PAUSE = "https://api.spotify.com/v1/me/player/pause"
+API_PLAY = "https://api.spotify.com/v1/me/player/play"
 
 
 def get_json(url: str, access_token: str) -> tuple[int, dict | None]:
@@ -89,6 +93,67 @@ def spotify_get(session: dict, url: str) -> tuple[dict, int, dict | None]:
         session = refresh_session(session)
         status, body = get_json(url, session["access_token"])
         return session, status, body
+
+
+def player_command(session: dict, action: str) -> tuple[dict, str | None]:
+    """Skip, pause, or resume the active Spotify device.
+
+    Purpose:
+        Drive the overlay's previous, pause, and next buttons. Spotify allows
+        this when the token includes user-modify-playback-state.
+
+    Parameters:
+        session (dict): Saved login with an access token.
+        action (str): "previous", "next", "pause", or "resume".
+
+    Returns:
+        tuple[dict, str | None]: The session to keep, and None on success.
+        A short key names a failure: "need_scope", "need_device", or
+        "playback_failed".
+
+    Precondition:
+        action is one of those four words. session can refresh after a 401.
+
+    Postcondition:
+        On success, Spotify has been asked to change playback. The overlay
+        is not closed when the command is refused.
+    """
+    method, url = {
+        "previous": ("POST", API_PREVIOUS),
+        "next": ("POST", API_NEXT),
+        "pause": ("PUT", API_PAUSE),
+        "resume": ("PUT", API_PLAY),
+    }[action]
+
+    def once(token: str) -> int:
+        request = urllib.request.Request(
+            url,
+            data=b"",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                response.read()
+                return response.status
+        except urllib.error.HTTPError as exc:
+            exc.read()
+            return exc.code
+
+    status = once(session["access_token"])
+    if status == 401:
+        session = refresh_session(session)
+        status = once(session["access_token"])
+    if status in (200, 202, 204):
+        return session, None
+    if status == 403:
+        return session, "need_scope"
+    if status == 404:
+        return session, "need_device"
+    return session, "playback_failed"
 
 
 def song_summary(now: dict | None) -> str:

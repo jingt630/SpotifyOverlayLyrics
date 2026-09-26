@@ -29,7 +29,7 @@ from spotify_client.auth import (
     prompt,
     save_tokens,
 )
-from spotify_client.player import fetch_now_playing, print_now_playing, print_profile
+from spotify_client.player import fetch_now_playing, player_command, print_now_playing, print_profile
 
 # True prints Spotify JSON and the LRCLIB search, then waits for Enter.
 # False hides those dumps and follows the current lyric line on its own.
@@ -205,19 +205,17 @@ def _lyric_print(lyrics: LyricLookup, now: dict | None, progress_ms: int) -> Lyr
         None leaves the saved pair unchanged.
     """
     if now is None:
-        message = "Nothing is currently playing."
-        if lyrics.status_is_showing(message):
+        if lyrics.status_is_showing("idle"):
             return None
-        lyrics.note_status(message)
-        return message
+        lyrics.note_status("idle")
+        return "idle"
     track = _track_id(now)
     window = lyrics.window_at(now, progress_ms)
     if lyrics.is_busy(track):
-        message = "LRCLIB is busy. Retrying…"
-        if lyrics.status_is_showing(message, track):
+        if lyrics.status_is_showing("busy", track):
             return None
-        lyrics.note_status(message, track)
-        return message
+        lyrics.note_status("busy", track)
+        return "busy"
     pending = lyrics.pending_choices(track)
     if pending is not None:
         if lyrics.status_is_showing("choose", track):
@@ -225,11 +223,10 @@ def _lyric_print(lyrics: LyricLookup, now: dict | None, progress_ms: int) -> Lyr
         lyrics.note_status("choose", track)
         return pending
     if window is None:
-        message = "No synced lyrics for this track."
-        if lyrics.status_is_showing(message, track):
+        if lyrics.status_is_showing("none", track):
             return None
-        lyrics.note_status(message, track)
-        return message
+        lyrics.note_status("none", track)
+        return "none"
     if lyrics.pair_is_showing(track, window):
         return None
     lyrics.remember_pair(track, window)
@@ -354,10 +351,11 @@ class OverlayFollow(QObject):
         duration = _duration_ms(now)
         if duration is not None:
             progress = min(progress, duration)
+        self.window.set_playing(self.playing)
         try:
             shown = _lyric_print(self.lyrics, now, progress)
         except LrcLibError:
-            shown = "LRCLIB is busy. Retrying…"
+            shown = "busy"
         if shown is None:
             return
         if isinstance(shown, list):
@@ -365,14 +363,41 @@ class OverlayFollow(QObject):
             self.window.set_choices(shown, self.lyrics.accept_candidate)
             return
         if isinstance(shown, str):
-            pair = (shown, "")
-        else:
-            upcoming = shown.next_line.text if shown.next_line is not None else ""
-            pair = (shown.singing.text, upcoming)
-        if pair == self._shown:
+            if shown == self._shown:
+                return
+            self._shown = shown
+            self.window.set_status(shown)
             return
-        self._shown = pair
-        self.window.set_lines(pair[0], pair[1])
+        slots = self.lyrics.slots_at(now, progress)
+        if slots is None or slots == self._shown:
+            return
+        self._shown = slots
+        self.window.set_lines(slots[0], slots[1], slots[2])
+
+    def previous(self) -> None:
+        """Ask Spotify to go to the previous track."""
+        self._command("previous")
+
+    def next(self) -> None:
+        """Ask Spotify to go to the next track."""
+        self._command("next")
+
+    def toggle_pause(self) -> None:
+        """Pause when audio is playing, or resume when it is paused."""
+        action = "pause" if self.playing else "resume"
+        self.playing = not self.playing
+        self.window.set_playing(self.playing)
+        self.session, error = player_command(self.session, action)
+        if error:
+            self.playing = not self.playing
+            self.window.set_playing(self.playing)
+            self.window.set_notice(error)
+
+    def _command(self, action: str) -> None:
+        """Send one playback command and surface a refusal on the overlay."""
+        self.session, error = player_command(self.session, action)
+        if error:
+            self.window.set_notice(error)
 
     def _poll_if_due(self) -> dict | None:
         """Return the latest Spotify body, polling when the interval has elapsed."""
@@ -419,8 +444,10 @@ def run_overlay(session: dict, lyrics: LyricLookup) -> None:
         The function returns when the overlay window is closed.
     """
     app = QApplication.instance() or QApplication([])
-    window = LyricOverlay("Loading lyrics…", "")
+    window = LyricOverlay()
+    window.set_status("loading")
     follow = OverlayFollow(session, lyrics, window)
+    window.set_transport(follow.previous, follow.toggle_pause, follow.next)
     frame = window.frameGeometry()
     screen = app.primaryScreen().availableGeometry().center()
     frame.moveCenter(screen)

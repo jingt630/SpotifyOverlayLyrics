@@ -34,12 +34,14 @@ REDIRECT_URI = f"http://{REDIRECT_HOST}:{REDIRECT_PORT}/callback"
 # user-read-private / user-read-email: read the account profile.
 # user-read-currently-playing: read the track that is playing now.
 # user-read-playback-state: read playback details such as progress and device.
+# user-modify-playback-state: previous, pause, and next from the overlay.
 SCOPES = " ".join(
     [
         "user-read-private",
         "user-read-email",
         "user-read-currently-playing",
         "user-read-playback-state",
+        "user-modify-playback-state",
     ]
 )
 

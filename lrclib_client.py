@@ -307,6 +307,51 @@ def lyric_window(lines: tuple[LyricLine, ...], progress_ms: int) -> LyricWindow 
     return LyricWindow(singing=singing, next_line=next_line)
 
 
+def lyric_slots(lines: tuple[LyricLine, ...], progress_ms: int) -> tuple[str, str, str] | None:
+    """Place the current line and the following line so the current line stays put.
+
+    Purpose:
+        Even lyric indexes stay on the left. Odd indexes stay on the right.
+        The other side shows the line that comes next. When playback reaches
+        lyric 11, line 2 stays lyric 11 and becomes the highlighted line, and
+        line 1 changes from lyric 10 to lyric 12.
+
+    Parameters:
+        lines (tuple[LyricLine, ...]): Sorted synced lines from one record.
+        progress_ms (int): Playback position in milliseconds.
+
+    Returns:
+        tuple[str, str, str] | None: Left text, right text, and "left" or
+        "right" for the side that is being sung. None when every line is blank.
+
+    Precondition:
+        lines are sorted by time_ms. progress_ms is >= 0.
+
+    Postcondition:
+        The highlighted side is the line whose timestamp the playback has
+        reached. The other side is the following line, or empty on the last line.
+    """
+    visible: list[LyricLine] = []
+    for line in lines:
+        if not line.text:
+            continue
+        if visible and visible[-1].time_ms == line.time_ms:
+            visible[-1] = line
+            continue
+        visible.append(line)
+    if not visible:
+        return None
+    index = 0
+    for cursor in range(len(visible) - 1):
+        if progress_ms < visible[cursor + 1].time_ms:
+            break
+        index = cursor + 1
+    following = visible[index + 1].text if index + 1 < len(visible) else ""
+    if index % 2 == 0:
+        return visible[index].text, following, "left"
+    return following, visible[index].text, "right"
+
+
 def same_lyric_timestamps(
     singing: LyricLine | None,
     next_line: LyricLine | None,
@@ -1168,6 +1213,32 @@ class LyricLookup:
         if self._match is None:
             return None
         return lyric_window(self._match.lines, progress_ms)
+
+    def slots_at(self, now: dict | None, progress_ms: int) -> tuple[str, str, str] | None:
+        """Return the left line, the right line, and which side is current.
+
+        Purpose:
+            Feed the overlay's two-line layout. The current line keeps its
+            side instead of both lines jumping up.
+
+        Parameters:
+            now (dict | None): Spotify currently-playing body, or None.
+            progress_ms (int): Playback position in milliseconds.
+
+        Returns:
+            tuple[str, str, str] | None: Left text, right text, and "left" or
+            "right". None when no synced record is locked.
+
+        Precondition:
+            progress_ms is >= 0.
+
+        Postcondition:
+            The locked record is unchanged when the Spotify track id is unchanged.
+        """
+        self._ensure(now)
+        if self._match is None:
+            return None
+        return lyric_slots(self._match.lines, progress_ms)
 
     def pair_is_showing(self, track_id: str | None, window: LyricWindow) -> bool:
         """Return whether the terminal already printed this timestamp pair.
