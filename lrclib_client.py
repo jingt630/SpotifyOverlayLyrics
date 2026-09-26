@@ -19,6 +19,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -836,6 +837,8 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
             continue
         choices.append((int(record["id"]), record, lyric_ms))
     if not choices:
+        return None
+    if sys.stdin is None or not sys.stdin.isatty():
         return None
     choices.sort(key=lambda item: _stored_duration_delta_ms(item[1], duration_ms) or abs(duration_ms - item[2]))
     print()

@@ -10,10 +10,15 @@ The function and URL flow is in spotify_flow.md.
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 
+from PyQt6.QtCore import QObject, QTimer
+from PyQt6.QtWidgets import QApplication, QMessageBox
+
 import lrclib_client
+from lyric_overlay import LyricOverlay
 from lrclib_client import LyricLookup, LyricWindow, format_clock
 from spotify_client.auth import (
     TOKEN_PATH,
@@ -281,6 +286,133 @@ def _duration_ms(now: dict | None) -> int | None:
     return None
 
 
+class OverlayFollow(QObject):
+    """Push the current lyric pair into the glass window.
+
+    Spotify is polled about once per second. Between polls the local clock
+    moves the pair forward only while playback is running. The window is
+    repainted when the singing line or the next line changes.
+    """
+
+    def __init__(self, session: dict, lyrics: LyricLookup, window: LyricOverlay) -> None:
+        """Store the login, the lyric cache, and the window to update.
+
+        Purpose:
+            Prepare one timer tick of playback following.
+
+        Parameters:
+            session (dict): Saved Spotify login.
+            lyrics (LyricLookup): Cache that maps a playback position to a pair.
+            window (LyricOverlay): Glass surface that draws the pair.
+
+        Returns:
+            None.
+
+        Precondition:
+            A QApplication is already running.
+
+        Postcondition:
+            No Spotify call has been made. The timer is not started.
+        """
+        super().__init__()
+        self.session = session
+        self.lyrics = lyrics
+        self.window = window
+        self.anchor_progress = 0
+        self.anchor_at = time.monotonic()
+        self.playing = False
+        self.last_poll = 0.0
+        self.last_track: str | None = None
+        self._now: dict | None = None
+        self._shown: tuple[str, str] | None = None
+        self.timer = QTimer(self)
+        self.timer.setInterval(int(LYRIC_DISPLAY_SECONDS * 1000))
+        self.timer.timeout.connect(self._tick)
+
+    def start(self) -> None:
+        """Read playback once the window is on screen, then keep updating it."""
+        QTimer.singleShot(0, self._tick)
+        self.timer.start()
+
+    def _tick(self) -> None:
+        """Advance the local clock and repaint when the lyric pair changes."""
+        now = self._poll_if_due()
+        elapsed_ms = int((time.monotonic() - self.anchor_at) * 1000) if self.playing else 0
+        progress = self.anchor_progress + elapsed_ms
+        duration = _duration_ms(now)
+        if duration is not None:
+            progress = min(progress, duration)
+        shown = _lyric_print(self.lyrics, now, progress)
+        if shown is None:
+            return
+        if isinstance(shown, str):
+            pair = (shown, "")
+        else:
+            upcoming = shown.next_line.text if shown.next_line is not None else ""
+            pair = (shown.singing.text, upcoming)
+        if pair == self._shown:
+            return
+        self._shown = pair
+        self.window.set_lines(pair[0], pair[1])
+
+    def _poll_if_due(self) -> dict | None:
+        """Return the latest Spotify body, polling when the interval has elapsed."""
+        if time.monotonic() - self.last_poll < SPOTIFY_POLL_SECONDS and self.last_poll != 0.0:
+            return self._now
+        self.session, now = fetch_now_playing(self.session)
+        reported = _progress_ms(now)
+        elapsed_ms = int((time.monotonic() - self.anchor_at) * 1000) if self.playing else 0
+        estimate = self.anchor_progress + elapsed_ms
+        track = _track_id(now)
+        small_rewind = (
+            track is not None
+            and track == self.last_track
+            and reported < estimate
+            and estimate - reported < SEEK_REWIND_MS
+        )
+        self.anchor_progress = estimate if small_rewind else reported
+        self.anchor_at = time.monotonic()
+        self.last_poll = self.anchor_at
+        self.playing = bool(now and now.get("is_playing"))
+        self.last_track = track
+        self._now = now
+        return now
+
+
+def run_overlay(session: dict, lyrics: LyricLookup) -> None:
+    """Open the glass window and follow the Spotify lyric pair in it.
+
+    Purpose:
+        Show the singing line and the next line on the overlay instead of
+        the terminal.
+
+    Parameters:
+        session (dict): Saved Spotify login that can call currently-playing.
+        lyrics (LyricLookup): Cache for the current track.
+
+    Returns:
+        None.
+
+    Precondition:
+        session can call the currently-playing endpoint.
+
+    Postcondition:
+        The function returns when the overlay window is closed.
+    """
+    app = QApplication.instance() or QApplication([])
+    window = LyricOverlay("Loading lyrics…", "")
+    follow = OverlayFollow(session, lyrics, window)
+    frame = window.frameGeometry()
+    screen = app.primaryScreen().availableGeometry().center()
+    frame.moveCenter(screen)
+    window.move(frame.topLeft())
+    window.show()
+    window.raise_()
+    window.activateWindow()
+    follow.start()
+    raise SystemExit(app.exec())
+
+
 def main() -> None:
     """Log in if needed, print the profile, then reread the song and lyric line.
 
@@ -303,11 +435,26 @@ def main() -> None:
         owns the terminal until the user quits.
     """
     # Song titles can contain characters the default Windows console cannot print.
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    # pythonw.exe, used by the desktop shortcut, has no console.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     session = load_saved_session()
     if session:
-        print("Using the Spotify login already saved in .spotify/tokens.json")
+        if sys.stdin is not None and sys.stdin.isatty():
+            print("Using the Spotify login already saved in .spotify/tokens.json")
+    elif sys.stdin is None or not sys.stdin.isatty():
+        app = QApplication.instance() or QApplication([])
+        QMessageBox.critical(
+            None,
+            "Spotify Lyric Overlay",
+            "Spotify login is not saved yet. Run connect_spotify.py in a terminal once, then open this shortcut again.",
+        )
+        raise SystemExit(1)
     else:
         print_setup()
         client_id = prompt("Paste your Spotify Client ID: ")
@@ -327,7 +474,7 @@ def main() -> None:
         lyrics.show(now)
         watch_keyboard(session, lyrics)
         return
-    follow_lyrics(session, lyrics)
+    run_overlay(session, lyrics)
 
 
 if __name__ == "__main__":
@@ -337,5 +484,10 @@ if __name__ == "__main__":
         print("\nCancelled.")
         raise SystemExit(1)
     except Exception as exc:
-        print(f"\nCould not connect: {exc}")
+        message = f"Could not connect: {exc}"
+        if sys.stdin is None or not sys.stdin.isatty():
+            app = QApplication.instance() or QApplication([])
+            QMessageBox.critical(None, "Spotify Lyric Overlay", message)
+        else:
+            print(f"\n{message}")
         raise SystemExit(1)
