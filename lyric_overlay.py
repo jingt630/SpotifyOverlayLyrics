@@ -74,9 +74,7 @@ _TEXT = {
         "none": "No synced lyrics for this track.",
         "busy": "LRCLIB is busy. Retrying…",
         "loading": "Loading lyrics…",
-        "need_scope": "Sign in again to use the playback buttons.",
-        "need_device": "No active Spotify device.",
-        "playback_failed": "Spotify did not change playback.",
+        "playback_failed": "Playback did not change.",
     },
     "zh": {
         "language": "语言",
@@ -106,9 +104,7 @@ _TEXT = {
         "none": "这首歌没有同步歌词。",
         "busy": "歌词库繁忙，正在重试…",
         "loading": "正在加载歌词…",
-        "need_scope": "请重新登录后再使用播放按钮。",
-        "need_device": "没有正在使用的 Spotify 设备。",
-        "playback_failed": "Spotify 没有切换播放。",
+        "playback_failed": "播放没有切换。",
     },
 }
 
