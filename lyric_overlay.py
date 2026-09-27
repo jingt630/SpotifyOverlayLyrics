@@ -32,6 +32,8 @@ from PyQt6.QtWidgets import QApplication, QWidget
 from lrclib_client import LyricCandidate
 
 _SETTINGS_PATH = Path(__file__).resolve().parent / ".spotify" / "overlay_ui.json"
+_TEXT_DIR = Path(__file__).resolve().parent / "settings_text"
+_SCROLL_W = 10
 _FONT_MIN = 16
 _FONT_MAX = 48
 _FONT_DEFAULT = 26
@@ -45,68 +47,44 @@ _ICON_GAP = 10
 _WIDTH_RATIO = 0.5
 _HEIGHT_RATIO = 0.5
 
-_TEXT = {
-    "en": {
-        "language": "Language",
-        "language_value": "English",
-        "lines": "Lines",
-        "two": "Two lines",
-        "one": "One line",
-        "font": "Font size",
-        "theme": "Theme",
-        "dark": "Dark",
-        "light": "Light",
-        "pick": "Pick a synced lyric",
-        "netease_pick": "Pick a NetEase lyric",
-        "use": "Use this",
-        "netease_search": "Checking NetEase…",
-        "netease_wait": "Waiting to check NetEase.",
-        "netease_saved": "NetEase word times saved.",
-        "netease_none": "No NetEase word sync.",
-        "netease_error": "NetEase did not respond.",
-        "netease_refused": "NetEase refused this lyric.",
-        "netease_nolyric": "NetEase says this song has no lyrics.",
-        "netease_uncollected": "NetEase has not collected lyrics for this song.",
-        "netease_line_only": "NetEase returned line lyrics only, no word sync.",
-        "netease_unparsed": "NetEase sent word lyrics we could not read.",
-        "idle": "Nothing is playing right now.",
-        "need_player": "Nothing is playing right now.",
-        "none": "No synced lyrics for this track.",
-        "busy": "LRCLIB is busy. Retrying…",
-        "loading": "Loading lyrics…",
-        "playback_failed": "Playback did not change.",
-    },
-    "zh": {
-        "language": "语言",
-        "language_value": "中文",
-        "lines": "行数",
-        "two": "两行",
-        "one": "一行",
-        "font": "字号",
-        "theme": "主题",
-        "dark": "深色",
-        "light": "浅色",
-        "pick": "选择同步歌词",
-        "netease_pick": "选择网易云歌词",
-        "use": "使用",
-        "netease_search": "正在查询网易云…",
-        "netease_wait": "稍后再查询网易云。",
-        "netease_saved": "网易云逐字时间已保存。",
-        "netease_none": "网易云没有逐字歌词。",
-        "netease_error": "网易云没有响应。",
-        "netease_refused": "网易云拒绝了这首歌词。",
-        "netease_nolyric": "网易云表示这首歌没有歌词。",
-        "netease_uncollected": "网易云还没有收录这首歌的歌词。",
-        "netease_line_only": "网易云只有逐行歌词，没有逐字歌词。",
-        "netease_unparsed": "网易云返回了无法读取的逐字歌词。",
-        "idle": "现在没有在播放。",
-        "need_player": "现在没有在播放。",
-        "none": "这首歌没有同步歌词。",
-        "busy": "歌词库繁忙，正在重试…",
-        "loading": "正在加载歌词…",
-        "playback_failed": "播放没有切换。",
-    },
-}
+def _load_text() -> dict[str, dict[str, str]]:
+    """Load one overlay-string table per JSON file in settings_text.
+
+    Purpose:
+        Each file name is a language code. The file holds interface strings
+        only. Song lyrics stay outside this folder.
+
+    Parameters:
+        None.
+
+    Returns:
+        dict[str, dict[str, str]]: Language code to string table. English is
+        always present, even if its file cannot be read.
+
+    Precondition:
+        settings_text sits next to this module.
+
+    Postcondition:
+        Missing or broken files are skipped. A missing English file yields
+        an empty English table so lookups still fall back to the key.
+    """
+    tables: dict[str, dict[str, str]] = {}
+    if _TEXT_DIR.is_dir():
+        for path in sorted(_TEXT_DIR.glob("*.json")):
+            try:
+                raw = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(raw, dict):
+                continue
+            strings = {str(key): str(value) for key, value in raw.items() if isinstance(value, str)}
+            if strings:
+                tables[path.stem] = strings
+    tables.setdefault("en", {})
+    return tables
+
+
+_TEXT = _load_text()
 
 # Segoe Fluent Icons / MDL2 code points. The bar is drawn with these glyphs.
 _GLYPH = {
@@ -215,6 +193,8 @@ class LyricOverlay(QWidget):
         self._on_top = True
         self._chrome = False
         self._settings_open = False
+        self._lang_open = False
+        self._scroll_drag: tuple[float, int, float] | None = None
         self._hits: list[tuple[QRectF, str, str | int]] = []
         self._drag_offset: QPoint | None = None
         self._hot: str | None = None
@@ -461,14 +441,23 @@ class LyricOverlay(QWidget):
         if event.button() != Qt.MouseButton.LeftButton:
             super().mousePressEvent(event)
             return
+        if self._settings_open and self._begin_scroll_drag(event.position()):
+            return
         hit = self._hit_at(event.position())
         if hit is not None:
             self._activate(hit)
+            return
+        if self._lang_open:
+            self._lang_open = False
+            self.update()
             return
         self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802 — Qt override name
         """Move the window, or point at a control."""
+        if self._scroll_drag is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            self._move_scroll_drag(event.position().y())
+            return
         if self._drag_offset is not None and event.buttons() & Qt.MouseButton.LeftButton:
             self.move(event.globalPosition().toPoint() - self._drag_offset)
             return
@@ -486,6 +475,7 @@ class LyricOverlay(QWidget):
     def mouseReleaseEvent(self, event) -> None:  # noqa: N802 — Qt override name
         """Stop dragging."""
         self._drag_offset = None
+        self._scroll_drag = None
         super().mouseReleaseEvent(event)
 
     def _activate(self, hit: tuple[str, str | int]) -> None:
@@ -493,6 +483,8 @@ class LyricOverlay(QWidget):
         kind, payload = hit
         if kind == "settings":
             self._settings_open = not self._settings_open
+            self._lang_open = False
+            self._scroll_drag = None
             self._set_chrome(True)
             self._relayout("top")
             return
@@ -517,26 +509,39 @@ class LyricOverlay(QWidget):
             self.close()
             return
         if kind == "lang":
-            self._language = "zh" if self._language == "en" else "en"
-            self._persist()
+            self._lang_open = not self._lang_open
+            self.update()
+            return
+        if kind == "pick-lang":
+            code = str(payload)
+            if code in _TEXT:
+                self._language = code
+                self._persist()
+            self._lang_open = False
             self._relayout("top")
             return
+        if kind == "lang-menu":
+            return
         if kind == "lines":
+            self._lang_open = False
             self._line_mode = "one" if self._line_mode == "two" else "two"
             self._persist()
             self._relayout("top")
             return
         if kind == "theme":
+            self._lang_open = False
             self._theme = "light" if self._theme == "dark" else "dark"
             self._persist()
             self.update()
             return
         if kind == "font-down":
+            self._lang_open = False
             self._font_size = max(_FONT_MIN, self._font_size - 2)
             self._persist()
             self._relayout("top")
             return
         if kind == "font-up":
+            self._lang_open = False
             self._font_size = min(_FONT_MAX, self._font_size + 2)
             self._persist()
             self._relayout("top")
@@ -708,7 +713,7 @@ class LyricOverlay(QWidget):
     def _settings_view_height(self) -> int:
         """Return the fixed height of the settings panel on screen."""
         line_h = QFontMetrics(_ui_font(13)).height()
-        return line_h * 3 + 28
+        return line_h * 3 + 36
 
     def _settings_content_height(self) -> int:
         """Return the full settings list height, including rows below the panel."""
@@ -1160,38 +1165,44 @@ class LyricOverlay(QWidget):
             y += line_h + 14
 
     def _draw_settings(self, painter: QPainter) -> None:
-        """Draw language, line mode, theme, and font size in a fixed scrolling panel."""
+        """Draw language, line mode, theme, and font size in a scrolling panel."""
         font = _ui_font(13)
         metrics = QFontMetrics(font)
         line_h = metrics.height()
         view = self._settings_view_rect()
         self._settings_scroll = max(0, min(self._settings_max_scroll(), self._settings_scroll))
         y = view.y() + 8 - self._settings_scroll
+        right_pad = _PAD_X + _SCROLL_W + 8
         painter.save()
         painter.setClipRect(view)
         painter.setFont(font)
+        painter.setPen(QColor(255, 255, 255, 40) if self._theme == "dark" else QColor(0, 0, 0, 28))
+        painter.drawLine(QPointF(view.left() + 12, view.top()), QPointF(view.right() - 12, view.top()))
         rows = [
-            ("lang", self.text("language"), self.text("language_value")),
+            ("lang", self.text("language"), f"{self.text('language_value')}  ▾"),
             ("lines", self.text("lines"), self.text(self._line_mode)),
             ("theme", self.text("theme"), self.text(self._theme)),
         ]
         ink = self._ink()
         hot = QColor(255, 255, 255, 40) if self._theme == "dark" else QColor(0, 0, 0, 24)
+        lang_row: QRectF | None = None
         for kind, label, value in rows:
-            rect = QRectF(_PAD_X, y, self.width() - _PAD_X * 2, line_h + 6)
-            if self._hot == f"{kind}:{kind}":
+            rect = QRectF(_PAD_X, y, self.width() - _PAD_X - right_pad, line_h + 6)
+            if self._hot == f"{kind}:{kind}" or (kind == "lang" and self._lang_open):
                 painter.fillRect(rect, hot)
             painter.setPen(ink)
             painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
             painter.drawText(rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, value)
             if view.intersects(rect):
                 self._hits.append((rect, kind, kind))
+            if kind == "lang":
+                lang_row = rect
             y += line_h + 10
         label_rect = QRectF(_PAD_X, y, self.width() * 0.45, line_h + 6)
         painter.setPen(ink)
         painter.drawText(label_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text("font"))
-        minus = QRectF(self.width() - _PAD_X - 92, y, 24, line_h + 6)
-        plus = QRectF(self.width() - _PAD_X - 24, y, 24, line_h + 6)
+        minus = QRectF(self.width() - right_pad - 92, y, 24, line_h + 6)
+        plus = QRectF(self.width() - right_pad - 24, y, 24, line_h + 6)
         value_rect = QRectF(minus.right(), y, plus.left() - minus.right(), line_h + 6)
         for rect, kind, glyph in ((minus, "font-down", "−"), (plus, "font-up", "+")):
             if self._hot == f"{kind}:{kind}":
@@ -1202,6 +1213,65 @@ class LyricOverlay(QWidget):
                 self._hits.append((rect, kind, kind))
         painter.setPen(ink)
         painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, str(self._font_size))
+        bar = self._settings_scrollbar()
+        if bar is not None:
+            track, thumb, _travel = bar
+            painter.setPen(Qt.PenStyle.NoPen)
+            track_ink = QColor(255, 255, 255, 36) if self._theme == "dark" else QColor(0, 0, 0, 28)
+            thumb_ink = QColor(255, 255, 255, 170) if self._theme == "dark" else QColor(0, 0, 0, 120)
+            painter.setBrush(track_ink)
+            painter.drawRoundedRect(track, 2, 2)
+            painter.setBrush(thumb_ink)
+            painter.drawRoundedRect(thumb, 3, 3)
+        painter.restore()
+        if self._lang_open and lang_row is not None:
+            self._draw_language_menu(painter, lang_row, font, metrics, line_h)
+
+    def _draw_language_menu(
+        self,
+        painter: QPainter,
+        anchor: QRectF,
+        font: QFont,
+        metrics: QFontMetrics,
+        line_h: int,
+    ) -> None:
+        """Draw the list of languages from settings_text."""
+        codes = self._language_codes()
+        names = [(_TEXT[code].get("language_value") or code) for code in codes]
+        row_h = line_h + 8
+        menu_w = max(metrics.horizontalAdvance(name) for name in names) + 36
+        menu_w = max(menu_w, 140)
+        menu_h = row_h * len(codes) + 8
+        left = min(max(8, anchor.right() - menu_w), self.width() - menu_w - 8)
+        top = anchor.bottom() + 4
+        if top + menu_h > self.height() - 8:
+            top = max(8, anchor.top() - 4 - menu_h)
+        menu = QRectF(left, top, menu_w, menu_h)
+        painter.save()
+        painter.setFont(font)
+        painter.setPen(Qt.PenStyle.NoPen)
+        fill = QColor(28, 28, 28, 235) if self._theme == "dark" else QColor(255, 255, 255, 242)
+        painter.setBrush(fill)
+        painter.drawRoundedRect(menu, 8, 8)
+        painter.setPen(QColor(255, 255, 255, 50) if self._theme == "dark" else QColor(0, 0, 0, 40))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(menu.adjusted(0.5, 0.5, -0.5, -0.5), 8, 8)
+        self._hits.append((menu, "lang-menu", "menu"))
+        ink = QColor(255, 255, 255) if self._theme == "dark" else QColor(20, 20, 20)
+        y = menu.top() + 4
+        for code, name in zip(codes, names):
+            row = QRectF(menu.left() + 4, y, menu.width() - 8, row_h)
+            if code == self._language or self._hot == f"pick-lang:{code}":
+                tint = QColor(255, 255, 255, 28) if self._theme == "dark" else QColor(0, 0, 0, 16)
+                painter.fillRect(row, tint)
+            painter.setPen(ink)
+            painter.drawText(
+                row.adjusted(10, 0, -10, 0),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                name,
+            )
+            self._hits.append((row, "pick-lang", code))
+            y += row_h
         painter.restore()
 
     def _draw_notice(self, painter: QPainter) -> None:
@@ -1213,10 +1283,94 @@ class LyricOverlay(QWidget):
 
     def _hit_at(self, pos: QPointF) -> tuple[str, str | int] | None:
         """Return the control under pos."""
-        for rect, kind, payload in self._hits:
+        for rect, kind, payload in reversed(self._hits):
             if rect.contains(pos):
                 return kind, payload
         return None
+
+    def _settings_scrollbar(self) -> tuple[QRectF, QRectF, float] | None:
+        """Return the track, the thumb, and how far the thumb can travel.
+
+        Purpose:
+            Place a visible bar on the right of the open settings panel.
+
+        Parameters:
+            None.
+
+        Returns:
+            tuple[QRectF, QRectF, float] | None: Track, thumb, and thumb
+            travel in pixels. None when the list fits in the panel.
+
+        Precondition:
+            The window size already includes the settings panel.
+
+        Postcondition:
+            The returned rectangles stay inside the settings view.
+        """
+        limit = self._settings_max_scroll()
+        if limit <= 0:
+            return None
+        view = self._settings_view_rect()
+        track = QRectF(view.right() - _SCROLL_W - 4, view.top() + 8, 4, max(1, view.height() - 16))
+        content = self._settings_content_height()
+        thumb_h = max(16.0, track.height() * view.height() / max(content, 1))
+        thumb_h = min(thumb_h, track.height())
+        travel = max(1.0, track.height() - thumb_h)
+        thumb_y = track.top() + (self._settings_scroll / limit) * travel
+        thumb = QRectF(track.left() - 1, thumb_y, 6, thumb_h)
+        return track, thumb, travel
+
+    def _begin_scroll_drag(self, pos: QPointF) -> bool:
+        """Start a thumb drag, or jump the list when the track is clicked.
+
+        Purpose:
+            Let the pointer move the settings list as well as the wheel.
+
+        Parameters:
+            pos (QPointF): Pointer position in widget coordinates.
+
+        Returns:
+            bool: True when the press landed on the scrollbar.
+
+        Precondition:
+            The settings panel is open.
+
+        Postcondition:
+            A thumb press stores the start point. A track press moves the list.
+        """
+        bar = self._settings_scrollbar()
+        if bar is None:
+            return False
+        track, thumb, travel = bar
+        if thumb.contains(pos):
+            self._scroll_drag = (pos.y(), self._settings_scroll, travel)
+            return True
+        if not track.adjusted(-4, 0, 4, 0).contains(pos):
+            return False
+        limit = self._settings_max_scroll()
+        ratio = (pos.y() - track.top() - thumb.height() / 2) / travel
+        self._settings_scroll = max(0, min(limit, int(ratio * limit)))
+        self._scroll_drag = (pos.y(), self._settings_scroll, travel)
+        self.update()
+        return True
+
+    def _move_scroll_drag(self, y: float) -> None:
+        """Move the settings list with the scrollbar thumb."""
+        if self._scroll_drag is None:
+            return
+        origin_y, origin_scroll, travel = self._scroll_drag
+        limit = self._settings_max_scroll()
+        delta = (y - origin_y) / travel * limit
+        self._settings_scroll = max(0, min(limit, int(origin_scroll + delta)))
+        self.update()
+
+    def _language_codes(self) -> list[str]:
+        """Return language codes, English first, then by native name."""
+        codes = [code for code in _TEXT if code != "en"]
+        codes.sort(key=lambda code: _TEXT[code].get("language_value", code).casefold())
+        if "en" in _TEXT:
+            codes.insert(0, "en")
+        return codes
 
 
 def main() -> None:
