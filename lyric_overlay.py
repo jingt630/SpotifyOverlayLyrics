@@ -14,7 +14,18 @@ import json
 from pathlib import Path
 
 from PyQt6.QtCore import QPoint, QPointF, QRectF, Qt, QTimer, QUrl
-from PyQt6.QtGui import QColor, QDesktopServices, QFont, QFontMetrics, QPainter
+from PyQt6.QtGui import (
+    QColor,
+    QCursor,
+    QDesktopServices,
+    QFont,
+    QFontMetrics,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QTextLayout,
+)
 from PyQt6.QtWidgets import QApplication, QWidget
 
 from lrclib_client import LyricCandidate
@@ -29,6 +40,9 @@ _PAD_Y = 18
 _BAR_H = 40
 _ICON = 28
 _ICON_GAP = 10
+# The overlay width stays at half the monitor so a longer line does not move the window.
+_WIDTH_RATIO = 0.5
+_HEIGHT_RATIO = 0.5
 
 _TEXT = {
     "en": {
@@ -38,6 +52,9 @@ _TEXT = {
         "two": "Two lines",
         "one": "One line",
         "font": "Font size",
+        "theme": "Theme",
+        "dark": "Dark",
+        "light": "Light",
         "pick": "Pick a synced lyric",
         "use": "Use this",
         "idle": "Nothing is playing right now.",
@@ -56,6 +73,9 @@ _TEXT = {
         "two": "两行",
         "one": "一行",
         "font": "字号",
+        "theme": "主题",
+        "dark": "深色",
+        "light": "浅色",
         "pick": "选择同步歌词",
         "use": "使用",
         "idle": "现在没有在播放。",
@@ -84,8 +104,8 @@ _GLYPH = {
 
 
 def _load_ui() -> dict:
-    """Return the saved language, line mode, and font size."""
-    saved = {"language": "en", "lines": "two", "font": _FONT_DEFAULT}
+    """Return the saved language, line mode, font size, and theme."""
+    saved = {"language": "en", "lines": "two", "font": _FONT_DEFAULT, "theme": "dark"}
     if not _SETTINGS_PATH.exists():
         return saved
     try:
@@ -99,14 +119,16 @@ def _load_ui() -> dict:
     font = raw.get("font")
     if isinstance(font, int):
         saved["font"] = max(_FONT_MIN, min(_FONT_MAX, font))
+    if raw.get("theme") in ("dark", "light"):
+        saved["theme"] = raw["theme"]
     return saved
 
 
-def _save_ui(language: str, lines: str, font: int) -> None:
+def _save_ui(language: str, lines: str, font: int, theme: str) -> None:
     """Write the overlay settings next to the other local Spotify files."""
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     _SETTINGS_PATH.write_text(
-        json.dumps({"language": language, "lines": lines, "font": font}, indent=2),
+        json.dumps({"language": language, "lines": lines, "font": font, "theme": theme}, indent=2),
         encoding="utf-8",
     )
 
@@ -154,6 +176,7 @@ class LyricOverlay(QWidget):
         self._language = ui["language"]
         self._line_mode = ui["lines"]
         self._font_size = ui["font"]
+        self._theme = ui["theme"]
         self.left = left
         self.right = right
         self._highlight = highlight
@@ -175,6 +198,10 @@ class LyricOverlay(QWidget):
         self._notice_timer = QTimer(self)
         self._notice_timer.setSingleShot(True)
         self._notice_timer.timeout.connect(self._clear_notice)
+        self._chrome_timer = QTimer(self)
+        self._chrome_timer.setSingleShot(True)
+        self._chrome_timer.timeout.connect(self._hide_chrome_if_outside)
+        self._settings_scroll = 0
         self.setWindowTitle("Spotify Lyric Overlay")
         self.setWindowFlags(
             Qt.WindowType.Window
@@ -287,7 +314,7 @@ class LyricOverlay(QWidget):
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         self._hits = []
         if self._chrome or self._settings_open:
-            painter.fillRect(self.rect(), QColor(0, 0, 0, _HOVER_ALPHA))
+            painter.fillRect(self.rect(), self._panel_color())
         if self._chrome or self._settings_open:
             self._draw_bar(painter)
         body = self._body_rect()
@@ -304,19 +331,34 @@ class LyricOverlay(QWidget):
         painter.end()
 
     def enterEvent(self, event) -> None:  # noqa: N802 — Qt override name
-        """Reveal the bar and the black tint."""
+        """Reveal the bar and the theme tint."""
+        self._chrome_timer.stop()
         self._set_chrome(True)
         super().enterEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802 — Qt override name
-        """Hide the bar unless settings are open."""
+        """Hide the bar after the pointer has actually left the window."""
         self._hot = None
         self.setCursor(Qt.CursorShape.ArrowCursor)
-        if not self._settings_open:
-            self._set_chrome(False)
-        else:
-            self.update()
+        self._chrome_timer.start(120)
         super().leaveEvent(event)
+
+    def wheelEvent(self, event) -> None:  # noqa: N802 — Qt override name
+        """Scroll the settings list when it is open and the pointer is over it."""
+        if not self._settings_open:
+            super().wheelEvent(event)
+            return
+        view = self._settings_view_rect()
+        if not view.contains(event.position()):
+            super().wheelEvent(event)
+            return
+        delta = event.angleDelta().y()
+        if delta == 0:
+            return
+        step = 28 if delta > 0 else -28
+        limit = self._settings_max_scroll()
+        self._settings_scroll = max(0, min(limit, self._settings_scroll - step))
+        self.update()
 
     def keyPressEvent(self, event) -> None:  # noqa: N802 — Qt override name
         """Close the overlay when Escape is pressed."""
@@ -395,6 +437,11 @@ class LyricOverlay(QWidget):
             self._persist()
             self._relayout("top")
             return
+        if kind == "theme":
+            self._theme = "light" if self._theme == "dark" else "dark"
+            self._persist()
+            self.update()
+            return
         if kind == "font-down":
             self._font_size = max(_FONT_MIN, self._font_size - 2)
             self._persist()
@@ -412,8 +459,33 @@ class LyricOverlay(QWidget):
             self._on_pick(int(payload))
 
     def _persist(self) -> None:
-        """Save language, line mode, and font size."""
-        _save_ui(self._language, self._line_mode, self._font_size)
+        """Save language, line mode, font size, and theme."""
+        _save_ui(self._language, self._line_mode, self._font_size, self._theme)
+
+    def _hide_chrome_if_outside(self) -> None:
+        """Drop the bar only when the pointer is outside the window."""
+        if self._settings_open:
+            self.update()
+            return
+        if self.frameGeometry().contains(QCursor.pos()):
+            return
+        self._set_chrome(False)
+
+    def _panel_color(self) -> QColor:
+        """Return the hover fill. Dark is black. Light is white."""
+        if self._theme == "light":
+            return QColor(255, 255, 255, 210)
+        return QColor(0, 0, 0, 150)
+
+    def _ink(self) -> QColor:
+        """Return the settings and icon color for the current theme."""
+        if self._theme == "light":
+            return QColor(20, 20, 20)
+        return QColor(255, 255, 255)
+
+    def _pair_inset(self) -> int:
+        """Return the gap after line one and before line two."""
+        return max(32, int(self._font_size * 1.8))
 
     def _clear_notice(self) -> None:
         """Remove the playback message."""
@@ -428,6 +500,19 @@ class LyricOverlay(QWidget):
         self._chrome = visible
         self._relayout("bottom")
 
+    def _screen_area(self):
+        """Return the working area of the monitor under this window."""
+        screen = self.screen() or QApplication.primaryScreen()
+        return screen.availableGeometry()
+
+    def _fixed_width(self) -> int:
+        """Return the overlay width: half the monitor, every song."""
+        return int(self._screen_area().width() * _WIDTH_RATIO)
+
+    def _max_window_height(self) -> int:
+        """Return the tallest the overlay may be: half the monitor."""
+        return int(self._screen_area().height() * _HEIGHT_RATIO)
+
     def _relayout(self, anchor: str) -> None:
         """Resize around the current top or bottom edge."""
         old = self.geometry()
@@ -439,43 +524,57 @@ class LyricOverlay(QWidget):
         self.move(x, y)
         self.update()
 
-    def _limits(self) -> tuple[int, int, int, int]:
-        """Return min width, max width, min height, and max height for this monitor."""
-        screen = self.screen() or QApplication.primaryScreen()
-        area = screen.availableGeometry()
-        return (
-            max(220, int(area.width() * 0.16)),
-            int(area.width() * 0.62),
-            max(56, int(area.height() * 0.045)),
-            int(area.height() * 0.36),
-        )
-
     def _apply_size(self) -> None:
-        """Resize to the lyric text, clamped to the monitor limits."""
-        min_w, max_w, min_h, max_h = self._limits()
-        text_w, text_h = self._content_size()
+        """Keep the width at half the monitor. Height follows wrapped lines, up to half the screen."""
+        text_h = self._content_size()[1]
         bar = _BAR_H if (self._chrome or self._settings_open) else 0
-        settings = self._settings_height() if self._settings_open else 0
+        settings = self._settings_view_height() if self._settings_open else 0
         notice = 28 if self._notice_key else 0
-        width = int(max(min_w, min(max_w, text_w + _PAD_X * 2)))
-        height = int(max(min_h, min(max_h, text_h + _PAD_Y * 2 + bar + settings + notice)))
-        self.resize(width, height)
+        height = int(text_h + _PAD_Y * 2 + bar + settings + notice)
+        height = min(max(height, 80), self._max_window_height())
+        self.resize(self._fixed_width(), height)
+
+    def _lyric_column_width(self) -> int:
+        """Return the width one lyric slot may use before it wraps."""
+        inner = self._fixed_width() - _PAD_X * 2
+        if self._line_mode == "one" or self._highlight == "single" or self._mode != "lyrics":
+            return max(1, inner)
+        return max(1, inner - self._pair_inset())
+
+    def _visual_lines(self, text: str, width: int) -> list[str]:
+        """Break text into rows that fit width. Long lines wrap instead of ending in an ellipsis."""
+        if not text:
+            return []
+        layout = QTextLayout(text, self._lyric_font())
+        layout.beginLayout()
+        rows: list[str] = []
+        while True:
+            line = layout.createLine()
+            if not line.isValid():
+                break
+            line.setLineWidth(max(1, width))
+            rows.append(text[line.textStart() : line.textStart() + line.textLength()])
+        layout.endLayout()
+        return rows or [text]
 
     def _content_size(self) -> tuple[float, float]:
-        """Return the width and height of the lyric or candidate block."""
+        """Return the lyric block height inside the fixed window width."""
         metrics = QFontMetrics(self._lyric_font())
         line_h = metrics.height()
         if self._mode == "status":
-            return metrics.horizontalAdvance(self.text(self._status_key or "loading")), line_h
+            rows = self._visual_lines(self.text(self._status_key or "loading"), self._lyric_column_width())
+            return self._fixed_width(), max(1, len(rows)) * line_h
         if self._mode == "choices":
             return self._choice_size(metrics, line_h)
+        width = self._lyric_column_width()
         if self._line_mode == "one" or self._highlight == "single":
-            shown = self.left if self._highlight != "right" else self.right
-            return max(metrics.horizontalAdvance(shown), 1), line_h
-        return (
-            max(metrics.horizontalAdvance(self.left), metrics.horizontalAdvance(self.right), 1),
-            line_h * 2 + 14,
-        )
+            shown = self.right if self._highlight == "right" else self.left
+            rows = self._visual_lines(shown, width)
+            return self._fixed_width(), max(1, len(rows)) * line_h
+        left_n = max(1, len(self._visual_lines(self.left, width))) if self.left else 0
+        right_n = max(1, len(self._visual_lines(self.right, width))) if self.right else 0
+        gap = 14 if left_n and right_n else 0
+        return self._fixed_width(), left_n * line_h + gap + right_n * line_h
 
     def _choice_size(self, metrics: QFontMetrics, line_h: int) -> tuple[float, float]:
         """Return the candidate list's text size."""
@@ -490,26 +589,44 @@ class LyricOverlay(QWidget):
     def _body_rect(self) -> QRectF:
         """Return the rectangle under the bar where lyrics are drawn."""
         top = _BAR_H if (self._chrome or self._settings_open) else 0
-        bottom = self._settings_height() if self._settings_open else 0
+        bottom = self._settings_view_height() if self._settings_open else 0
         if self._notice_key:
             bottom += 28
         return QRectF(0, top, self.width(), self.height() - top - bottom)
 
-    def _settings_height(self) -> int:
-        """Return the settings panel height."""
-        return QFontMetrics(_ui_font(13)).height() * 3 + 36
+    def _settings_view_height(self) -> int:
+        """Return the fixed height of the settings panel on screen."""
+        line_h = QFontMetrics(_ui_font(13)).height()
+        return line_h * 3 + 28
+
+    def _settings_content_height(self) -> int:
+        """Return the full settings list height, including rows below the panel."""
+        line_h = QFontMetrics(_ui_font(13)).height()
+        return 8 + (line_h + 10) * 3 + (line_h + 6) + 8
+
+    def _settings_max_scroll(self) -> int:
+        """Return how far the settings list can move up."""
+        return max(0, self._settings_content_height() - self._settings_view_height())
+
+    def _settings_view_rect(self) -> QRectF:
+        """Return the on-screen rectangle of the settings panel."""
+        top = self.height() - self._settings_view_height() - (28 if self._notice_key else 0)
+        return QRectF(0, top, self.width(), self._settings_view_height())
 
     def _lyric_font(self) -> QFont:
-        """Return the lyric font at the chosen size."""
-        font = QFont("Segoe UI", self._font_size)
-        font.setWeight(QFont.Weight.Normal)
+        """Return a bold lyric face. Chinese uses Microsoft YaHei when it is installed."""
+        font = QFont("Microsoft YaHei", self._font_size)
+        font.setWeight(QFont.Weight.Bold)
+        if not QFontMetrics(font).inFontUcs4(0x6B4C):
+            font = QFont("Segoe UI", self._font_size)
+            font.setWeight(QFont.Weight.Bold)
         return font
 
     def _draw_bar(self, painter: QPainter) -> None:
         """Draw the centered icon row."""
         icons = [
             ("settings", _GLYPH["settings"]),
-            ("lock", _GLYPH["unlock"] if self._on_top else _GLYPH["lock"]),
+            ("lock", _GLYPH["lock"] if self._on_top else _GLYPH["unlock"]),
             ("previous", _GLYPH["previous"]),
             ("pause", _GLYPH["pause"] if self._playing else _GLYPH["play"]),
             ("next", _GLYPH["next"]),
@@ -523,18 +640,20 @@ class LyricOverlay(QWidget):
         for kind, glyph in icons:
             rect = QRectF(x, y, _ICON, _ICON)
             if self._hot == f"{kind}:{kind}":
-                painter.fillRect(rect, QColor(255, 255, 255, 50))
+                tint = QColor(255, 255, 255, 50) if self._theme == "dark" else QColor(0, 0, 0, 28)
+                painter.fillRect(rect, tint)
             self._draw_glyph(painter, rect, glyph)
             self._hits.append((rect, kind, kind))
             x += _ICON + _ICON_GAP
 
     def _draw_glyph(self, painter: QPainter, rect: QRectF, glyph: str) -> None:
-        """Draw one icon in black with a light edge so it shows on any desktop."""
+        """Draw one icon in the theme color with a contrasting edge."""
         flags = Qt.AlignmentFlag.AlignCenter
-        painter.setPen(QColor(255, 255, 255, 200))
+        edge = QColor(0, 0, 0) if self._theme == "dark" else QColor(255, 255, 255)
+        painter.setPen(edge)
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             painter.drawText(rect.translated(dx, dy), flags, glyph)
-        painter.setPen(QColor(0, 0, 0))
+        painter.setPen(self._ink())
         painter.drawText(rect, flags, glyph)
 
     def _draw_lyrics(self, painter: QPainter, body: QRectF) -> None:
@@ -544,57 +663,123 @@ class LyricOverlay(QWidget):
         metrics = QFontMetrics(font)
         content = body.adjusted(_PAD_X, _PAD_Y, -_PAD_X, -_PAD_Y)
         line_h = metrics.height()
+        painter.save()
+        painter.setClipRect(body)
         if self._line_mode == "one" or self._highlight == "single":
             shown = self.right if self._highlight == "right" else self.left
-            top = content.y() + max(0, (content.height() - line_h) / 2)
-            self._draw_marked(
+            rows = self._visual_lines(shown, int(content.width()))
+            block_h = max(1, len(rows)) * line_h
+            top = content.y() + max(0, (content.height() - block_h) / 2)
+            self._draw_wrapped(
                 painter,
-                QRectF(content.x(), top, content.width(), line_h),
-                shown,
+                content.x(),
+                top,
+                content.width(),
+                line_h,
+                rows,
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
                 current=True,
             )
+            painter.restore()
             return
-        block_h = line_h * 2 + 14
+        inset = self._pair_inset()
+        col_w = max(1.0, content.width() - inset)
+        left_rows = self._visual_lines(self.left, int(col_w))
+        right_rows = self._visual_lines(self.right, int(col_w))
+        gap = 14 if left_rows and right_rows else 0
+        block_h = len(left_rows) * line_h + gap + len(right_rows) * line_h
         top = content.y() + max(0, (content.height() - block_h) / 2)
-        max_w = int(content.width())
-        left = metrics.elidedText(self.left, Qt.TextElideMode.ElideRight, max_w)
-        right = metrics.elidedText(self.right, Qt.TextElideMode.ElideRight, max_w)
-        self._draw_marked(
+        self._draw_wrapped(
             painter,
-            QRectF(content.x(), top, content.width(), line_h),
-            left,
+            content.x(),
+            top,
+            col_w,
+            line_h,
+            left_rows,
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             current=self._highlight == "left",
         )
-        self._draw_marked(
+        self._draw_wrapped(
             painter,
-            QRectF(content.x(), top + line_h + 14, content.width(), line_h),
-            right,
+            content.x() + inset,
+            top + len(left_rows) * line_h + gap,
+            col_w,
+            line_h,
+            right_rows,
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
             current=self._highlight == "right",
         )
+        painter.restore()
+
+    def _draw_wrapped(
+        self,
+        painter: QPainter,
+        x: float,
+        y: float,
+        width: float,
+        line_h: int,
+        rows: list[str],
+        flags: Qt.AlignmentFlag,
+        current: bool,
+    ) -> None:
+        """Draw each wrapped row of one lyric slot."""
+        for index, row in enumerate(rows):
+            self._draw_marked(
+                painter,
+                QRectF(x, y + index * line_h, width, line_h),
+                row,
+                flags,
+                current,
+            )
 
     def _draw_status(self, painter: QPainter, body: QRectF) -> None:
         """Draw one centered status sentence."""
-        painter.setFont(self._lyric_font())
-        self._draw_marked(
+        font = self._lyric_font()
+        painter.setFont(font)
+        content = body.adjusted(_PAD_X, _PAD_Y, -_PAD_X, -_PAD_Y)
+        line_h = QFontMetrics(font).height()
+        rows = self._visual_lines(self.text(self._status_key or "loading"), int(content.width()))
+        block_h = max(1, len(rows)) * line_h
+        top = content.y() + max(0, (content.height() - block_h) / 2)
+        self._draw_wrapped(
             painter,
-            body.adjusted(_PAD_X, 0, -_PAD_X, 0),
-            self.text(self._status_key or "loading"),
-            Qt.AlignmentFlag.AlignCenter,
-            current=True,
+            content.x(),
+            top,
+            content.width(),
+            line_h,
+            rows,
+            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
+            current=False,
         )
 
     def _draw_marked(self, painter: QPainter, rect: QRectF, text: str, flags: Qt.AlignmentFlag, current: bool) -> None:
-        """Draw lyric text. The current line is solid. The other line is lighter."""
+        """Draw lyric text with a black outline. The sung line is yellow to orange."""
         if not text:
             return
-        painter.setPen(QColor(255, 255, 255, 210))
-        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            painter.drawText(rect.translated(dx, dy), flags, text)
-        painter.setPen(QColor(0, 0, 0) if current else QColor(70, 70, 70, 170))
-        painter.drawText(rect, flags, text)
+        metrics = painter.fontMetrics()
+        width = metrics.horizontalAdvance(text)
+        if flags & Qt.AlignmentFlag.AlignHCenter:
+            x = rect.x() + (rect.width() - width) / 2
+        elif flags & Qt.AlignmentFlag.AlignRight:
+            x = rect.right() - width
+        else:
+            x = rect.x()
+        baseline = rect.y() + metrics.ascent() + (rect.height() - metrics.height()) / 2
+        path = QPainterPath()
+        path.addText(x, baseline, painter.font(), text)
+        outline = QPen(QColor(0, 0, 0), max(2.0, self._font_size * 0.16))
+        outline.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        outline.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.strokePath(path, outline)
+        if current:
+            bounds = path.boundingRect()
+            gradient = QLinearGradient(bounds.topLeft(), bounds.bottomLeft())
+            gradient.setColorAt(0.0, QColor(255, 244, 140))
+            gradient.setColorAt(0.45, QColor(255, 176, 32))
+            gradient.setColorAt(1.0, QColor(255, 98, 16))
+            painter.fillPath(path, gradient)
+        else:
+            painter.fillPath(path, QColor(255, 255, 255))
 
     def _draw_choices(self, painter: QPainter, bounds: QRectF) -> None:
         """Draw each candidate on the left, with a link and a Use this button."""
@@ -612,7 +797,7 @@ class LyricOverlay(QWidget):
             QRectF(content.x(), y, content.width(), line_h),
             self.text("pick"),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            current=True,
+            current=False,
         )
         y += line_h + 10
         for row in self._choice_rows:
@@ -622,7 +807,7 @@ class LyricOverlay(QWidget):
                 QRectF(content.x(), y, content.width(), line_h),
                 label,
                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                current=True,
+                current=False,
             )
             y += line_h + 4
             link_w = metrics.horizontalAdvance(row.url)
@@ -642,44 +827,55 @@ class LyricOverlay(QWidget):
             y += line_h + 14
 
     def _draw_settings(self, painter: QPainter) -> None:
-        """Draw language, line mode, and font size under the lyrics."""
+        """Draw language, line mode, theme, and font size in a fixed scrolling panel."""
         font = _ui_font(13)
         metrics = QFontMetrics(font)
         line_h = metrics.height()
-        top = self.height() - self._settings_height() - (28 if self._notice_key else 0)
-        y = top + 8
+        view = self._settings_view_rect()
+        self._settings_scroll = max(0, min(self._settings_max_scroll(), self._settings_scroll))
+        y = view.y() + 8 - self._settings_scroll
+        painter.save()
+        painter.setClipRect(view)
         painter.setFont(font)
         rows = [
             ("lang", self.text("language"), self.text("language_value")),
             ("lines", self.text("lines"), self.text(self._line_mode)),
+            ("theme", self.text("theme"), self.text(self._theme)),
         ]
+        ink = self._ink()
+        hot = QColor(255, 255, 255, 40) if self._theme == "dark" else QColor(0, 0, 0, 24)
         for kind, label, value in rows:
             rect = QRectF(_PAD_X, y, self.width() - _PAD_X * 2, line_h + 6)
             if self._hot == f"{kind}:{kind}":
-                painter.fillRect(rect, QColor(255, 255, 255, 40))
-            painter.setPen(QColor(0, 0, 0))
+                painter.fillRect(rect, hot)
+            painter.setPen(ink)
             painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
             painter.drawText(rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, value)
-            self._hits.append((rect, kind, kind))
+            if view.intersects(rect):
+                self._hits.append((rect, kind, kind))
             y += line_h + 10
         label_rect = QRectF(_PAD_X, y, self.width() * 0.45, line_h + 6)
-        painter.setPen(QColor(0, 0, 0))
+        painter.setPen(ink)
         painter.drawText(label_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text("font"))
         minus = QRectF(self.width() - _PAD_X - 92, y, 24, line_h + 6)
         plus = QRectF(self.width() - _PAD_X - 24, y, 24, line_h + 6)
         value_rect = QRectF(minus.right(), y, plus.left() - minus.right(), line_h + 6)
         for rect, kind, glyph in ((minus, "font-down", "−"), (plus, "font-up", "+")):
             if self._hot == f"{kind}:{kind}":
-                painter.fillRect(rect, QColor(255, 255, 255, 60))
+                painter.fillRect(rect, hot)
+            painter.setPen(ink)
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, glyph)
-            self._hits.append((rect, kind, kind))
+            if view.intersects(rect):
+                self._hits.append((rect, kind, kind))
+        painter.setPen(ink)
         painter.drawText(value_rect, Qt.AlignmentFlag.AlignCenter, str(self._font_size))
+        painter.restore()
 
     def _draw_notice(self, painter: QPainter) -> None:
         """Draw the playback message along the bottom."""
         painter.setFont(_ui_font(11))
         rect = QRectF(_PAD_X, self.height() - 26, self.width() - _PAD_X * 2, 20)
-        painter.setPen(QColor(0, 0, 0))
+        painter.setPen(self._ink())
         painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text(self._notice_key))
 
     def _hit_at(self, pos: QPointF) -> tuple[str, str | int] | None:
