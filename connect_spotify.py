@@ -18,6 +18,7 @@ from PyQt6.QtCore import QObject, QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import lrclib_client
+from live_word_sync import LiveWordSync
 from lyric_overlay import LyricOverlay
 from lrclib_client import LrcLibError, LyricLookup, LyricWindow, format_clock
 from spotify_client.auth import (
@@ -363,6 +364,7 @@ class OverlayFollow(QObject):
         self.last_track: str | None = None
         self._now: dict | None = None
         self._shown: tuple | None = None
+        self.live_words = LiveWordSync()
         self.timer = QTimer(self)
         self.timer.setInterval(int(LYRIC_DISPLAY_SECONDS * 1000))
         self.timer.timeout.connect(self._tick)
@@ -380,6 +382,7 @@ class OverlayFollow(QObject):
         duration = _duration_ms(now)
         if duration is not None:
             progress = min(progress, duration)
+        self.live_words.note(now, self.lyrics, progress, self.playing)
         self.window.set_playing(self.playing)
         try:
             shown = _lyric_print(self.lyrics, now, progress)
