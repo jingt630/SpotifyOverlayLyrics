@@ -1350,6 +1350,26 @@ class LyricLookup:
             return None
         return list(self._pending)
 
+    def lacks_synced_lyrics(self, track_id: str | None) -> bool:
+        """Return whether this Spotify track was already found to have no synced lyrics.
+
+        Purpose:
+            Let the overlay ask Spotify less often when line timing cannot change.
+
+        Parameters:
+            track_id (str | None): Spotify track id, or None when nothing is playing.
+
+        Returns:
+            bool: True when this id was looked up and no synced record was locked.
+
+        Precondition:
+            track_id is None or a Spotify track id.
+
+        Postcondition:
+            No network call is made.
+        """
+        return track_id is not None and track_id == self._miss_key
+
     def is_busy(self, track_id: str | None) -> bool:
         """Return whether LRCLIB asked us to wait before looking up this track again."""
         return track_id == self._busy_key and time.monotonic() < self._busy_until

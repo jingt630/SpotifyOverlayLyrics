@@ -35,7 +35,9 @@ from spotify_client.player import fetch_now_playing, player_command, print_now_p
 # False hides those dumps and follows the current lyric line on its own.
 PRINT_API_DETAILS = False
 # How often to ask Spotify for the real playback position.
-SPOTIFY_POLL_SECONDS = 1.0
+SPOTIFY_POLL_SECONDS = 10.0
+# A track with no synced lyrics only needs a check to notice a song change.
+SPOTIFY_POLL_NO_LYRICS_SECONDS = 30.0
 
 # So we keep a local clock to help with lyric switching if between Spotify polls.
 # How often to check the local clock for a new lyric pair. The pair itself is
@@ -86,9 +88,11 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
 
     Purpose:
         Stay aligned with playback without calling Spotify on every check.
-        Spotify is polled about once per SPOTIFY_POLL_SECONDS. Between polls,
-        progress_ms advances by the time spent only while Spotify reported
-        that audio is playing.         Each pair is the singing line and the next line in parentheses. It is
+        Spotify is polled about once per SPOTIFY_POLL_SECONDS, or once per
+        SPOTIFY_POLL_NO_LYRICS_SECONDS when this track has no synced lyrics.
+        Between polls, progress_ms advances by the time spent only while
+        Spotify reported that audio is playing. Each pair is the singing line
+        and the next line in parentheses. It is
         printed when that pair's LRCLIB timestamps change. A new track prints
         its title and artist first. While paused, Spotify still returns the
         item and progress_ms with is_playing false, and the pause position is
@@ -123,7 +127,7 @@ def follow_lyrics(session: dict, lyrics: LyricLookup) -> None:
     showing_pause = False
     printed = False
     while True:
-        if time.monotonic() - last_poll >= SPOTIFY_POLL_SECONDS:
+        if time.monotonic() - last_poll >= _poll_wait_seconds(lyrics, now):
             session, now = fetch_now_playing(session)
             reported = _progress_ms(now)
             elapsed_ms = int((time.monotonic() - anchor_at) * 1000) if playing else 0
@@ -250,6 +254,31 @@ def _format_track_label(song: str | None, artist: str | None) -> str:
     if song:
         return song
     return "Unknown track"
+
+
+def _poll_wait_seconds(lyrics: LyricLookup, now: dict | None) -> float:
+    """Return how long to wait before the next currently-playing request.
+
+    Purpose:
+        Check every 10 seconds while synced lyrics can move, and every 30
+        seconds after LRCLIB has no synced record for this track.
+
+    Parameters:
+        lyrics (LyricLookup): Cache that remembers a confirmed miss.
+        now (dict | None): Latest currently-playing body, or None.
+
+    Returns:
+        float: Seconds until the next Spotify poll.
+
+    Precondition:
+        lyrics has already recorded the lookup result for this track, if any.
+
+    Postcondition:
+        No network call is made.
+    """
+    if lyrics.lacks_synced_lyrics(_track_id(now)):
+        return SPOTIFY_POLL_NO_LYRICS_SECONDS
+    return SPOTIFY_POLL_SECONDS
 
 
 def _track_header(now: dict | None) -> str | None:
@@ -401,7 +430,8 @@ class OverlayFollow(QObject):
 
     def _poll_if_due(self) -> dict | None:
         """Return the latest Spotify body, polling when the interval has elapsed."""
-        if time.monotonic() - self.last_poll < SPOTIFY_POLL_SECONDS and self.last_poll != 0.0:
+        wait = _poll_wait_seconds(self.lyrics, self._now)
+        if time.monotonic() - self.last_poll < wait and self.last_poll != 0.0:
             return self._now
         self.session, now = fetch_now_playing(self.session)
         reported = _progress_ms(now)
