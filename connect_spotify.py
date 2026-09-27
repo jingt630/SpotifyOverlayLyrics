@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import lrclib_client
 from lyric_overlay import LyricOverlay
-from lrclib_client import LrcLibError, LyricLookup, LyricWindow, format_clock
+from lrclib_client import LrcLibError, LyricLookup, LyricWindow, format_clock, windows_choice_store
 from spotify_client.auth import (
     TOKEN_PATH,
     authorize,
@@ -34,6 +34,9 @@ from spotify_client.player import fetch_now_playing, player_command, print_now_p
 # True prints Spotify JSON and the LRCLIB search, then waits for Enter.
 # False hides those dumps and follows the current lyric line on its own.
 PRINT_API_DETAILS = False
+# "windows" reads the Spotify desktop app from the Windows media session.
+# "spotify" polls the Web API. The lyric overlay and LRCLIB filtering are the same.
+PLAYBACK_SOURCE = "windows"
 # How often to ask Spotify for the real playback position.
 SPOTIFY_POLL_SECONDS = 10.0
 # A track with no synced lyrics only needs a check to notice a song change.
@@ -261,7 +264,9 @@ def _poll_wait_seconds(lyrics: LyricLookup, now: dict | None) -> float:
 
     Purpose:
         Check every 10 seconds while synced lyrics can move, and every 30
-        seconds after LRCLIB has no synced record for this track.
+        seconds after LRCLIB has no synced record for this track. While audio
+        is playing and less than that interval remains in the song, the next
+        check is when the track should end, so the next song's lyrics can start.
 
     Parameters:
         lyrics (LyricLookup): Cache that remembers a confirmed miss.
@@ -277,8 +282,20 @@ def _poll_wait_seconds(lyrics: LyricLookup, now: dict | None) -> float:
         No network call is made.
     """
     if lyrics.lacks_synced_lyrics(_track_id(now)):
-        return SPOTIFY_POLL_NO_LYRICS_SECONDS
-    return SPOTIFY_POLL_SECONDS
+        base = SPOTIFY_POLL_NO_LYRICS_SECONDS
+    else:
+        base = SPOTIFY_POLL_SECONDS
+    if not (now and now.get("is_playing")):
+        return base
+    duration = _duration_ms(now)
+    if duration is None:
+        return base
+    remaining = (duration - _progress_ms(now)) / 1000
+    if remaining <= 0:
+        return 1.0
+    if remaining < base:
+        return remaining
+    return base
 
 
 def _track_header(now: dict | None) -> str | None:
@@ -327,12 +344,12 @@ def _duration_ms(now: dict | None) -> int | None:
 class OverlayFollow(QObject):
     """Push the current lyric pair into the glass window.
 
-    Spotify is polled about once per second. Between polls the local clock
-    moves the pair forward only while playback is running. The window is
-    repainted when the singing line or the next line changes.
+    Between playback samples the local clock moves the pair forward only
+    while audio is playing. The window is repainted when the singing line
+    or the next line changes.
     """
 
-    def __init__(self, session: dict, lyrics: LyricLookup, window: LyricOverlay) -> None:
+    def __init__(self, session: dict | None, lyrics: LyricLookup, window: LyricOverlay) -> None:
         """Store the login, the lyric cache, and the window to update.
 
         Purpose:
@@ -354,6 +371,7 @@ class OverlayFollow(QObject):
         """
         super().__init__()
         self.session = session
+        self.playback = None
         self.lyrics = lyrics
         self.window = window
         self.anchor_progress = 0
@@ -361,6 +379,7 @@ class OverlayFollow(QObject):
         self.playing = False
         self.last_poll = 0.0
         self.last_track: str | None = None
+        self._seen_generation = -1
         self._now: dict | None = None
         self._shown: tuple | None = None
         self.timer = QTimer(self)
@@ -404,11 +423,11 @@ class OverlayFollow(QObject):
         self.window.set_lines(slots[0], slots[1], slots[2])
 
     def previous(self) -> None:
-        """Ask Spotify to go to the previous track."""
+        """Ask the active source to go to the previous track."""
         self._command("previous")
 
     def next(self) -> None:
-        """Ask Spotify to go to the next track."""
+        """Ask the active source to go to the next track."""
         self._command("next")
 
     def toggle_pause(self) -> None:
@@ -416,7 +435,10 @@ class OverlayFollow(QObject):
         action = "pause" if self.playing else "resume"
         self.playing = not self.playing
         self.window.set_playing(self.playing)
-        self.session, error = player_command(self.session, action)
+        if self.playback is not None:
+            error = self.playback.command(action)
+        else:
+            self.session, error = player_command(self.session, action)
         if error:
             self.playing = not self.playing
             self.window.set_playing(self.playing)
@@ -424,12 +446,17 @@ class OverlayFollow(QObject):
 
     def _command(self, action: str) -> None:
         """Send one playback command and surface a refusal on the overlay."""
-        self.session, error = player_command(self.session, action)
+        if self.playback is not None:
+            error = self.playback.command(action)
+        else:
+            self.session, error = player_command(self.session, action)
         if error:
             self.window.set_notice(error)
 
     def _poll_if_due(self) -> dict | None:
-        """Return the latest Spotify body, polling when the interval has elapsed."""
+        """Return the latest playback body, reading when a new sample is due."""
+        if self.playback is not None:
+            return self._poll_windows()
         wait = _poll_wait_seconds(self.lyrics, self._now)
         if time.monotonic() - self.last_poll < wait and self.last_poll != 0.0:
             return self._now
@@ -451,6 +478,79 @@ class OverlayFollow(QObject):
         self.last_track = track
         self._now = now
         return now
+
+    def _poll_windows(self) -> dict | None:
+        """Apply a Windows sample when an event or the one-second read published one."""
+        now, generation = self.playback.latest()
+        if generation == self._seen_generation:
+            return self._now
+        self._seen_generation = generation
+        reported = _progress_ms(now)
+        elapsed_ms = int((time.monotonic() - self.anchor_at) * 1000) if self.playing else 0
+        estimate = self.anchor_progress + elapsed_ms
+        track = _track_id(now)
+        small_rewind = (
+            track is not None
+            and track == self.last_track
+            and reported < estimate
+            and estimate - reported < SEEK_REWIND_MS
+        )
+        self.anchor_progress = estimate if small_rewind else reported
+        self.anchor_at = time.monotonic()
+        self.last_poll = self.anchor_at
+        self.playing = bool(now and now.get("is_playing"))
+        self.last_track = track
+        self._now = now
+        return now
+
+
+def run_windows_overlay(lyrics: LyricLookup) -> None:
+    """Open the overlay and follow Spotify through the Windows media session.
+
+    Purpose:
+        Show the same lyric pair as the Web API path, using title, artist,
+        album, and position from the desktop app.
+
+    Parameters:
+        lyrics (LyricLookup): Cache whose choice map is the Windows song key.
+
+    Returns:
+        None.
+
+    Precondition:
+        The WinRT media-control packages are installed.
+
+    Postcondition:
+        The function returns when the overlay window is closed. Spotify's
+        lyric_choices.json and lyric_catalog.csv are not written.
+    """
+    from windows_media import WindowsPlayback
+
+    app = QApplication.instance() or QApplication([])
+    try:
+        playback = WindowsPlayback()
+        playback.start()
+    except Exception as exc:
+        QMessageBox.critical(
+            None,
+            "Spotify Lyric Overlay",
+            f"Could not read the Windows media session: {exc}",
+        )
+        raise SystemExit(1)
+    window = LyricOverlay()
+    window.set_status("loading")
+    follow = OverlayFollow(None, lyrics, window)
+    follow.playback = playback
+    window.set_transport(follow.previous, follow.toggle_pause, follow.next)
+    frame = window.frameGeometry()
+    screen = app.primaryScreen().availableGeometry().center()
+    frame.moveCenter(screen)
+    window.move(frame.topLeft())
+    window.show()
+    window.raise_()
+    window.activateWindow()
+    follow.start()
+    raise SystemExit(app.exec())
 
 
 def run_overlay(session: dict, lyrics: LyricLookup) -> None:
@@ -519,6 +619,13 @@ def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+    lrclib_client.VERBOSE = PRINT_API_DETAILS
+    lrclib_client.OVERLAY_CHOICES = not PRINT_API_DETAILS
+    if PLAYBACK_SOURCE == "windows":
+        lyrics = LyricLookup(choices=windows_choice_store())
+        run_windows_overlay(lyrics)
+        return
+
     session = load_saved_session()
     if session:
         if sys.stdin is not None and sys.stdin.isatty():
@@ -542,8 +649,6 @@ def main() -> None:
         print(f"Tokens saved to {TOKEN_PATH}")
         print_token_summary(token)
 
-    lrclib_client.VERBOSE = PRINT_API_DETAILS
-    lrclib_client.OVERLAY_CHOICES = not PRINT_API_DETAILS
     lyrics = LyricLookup()
     session = print_profile(session, verbose=PRINT_API_DETAILS)
     if PRINT_API_DETAILS:

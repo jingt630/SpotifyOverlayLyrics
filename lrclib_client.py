@@ -54,6 +54,9 @@ def _debug(*args, **kwargs) -> None:
 CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
 CATALOG_PATH = CHOICES_PATH.with_name("lyric_catalog.csv")
 CATALOG_FIELDS = ("spotify_id", "lrclib_id", "track_name", "artist_name", "album_name", "duration")
+WINDOWS_CHOICES_PATH = CHOICES_PATH.with_name("windows_lyric_choices.json")
+WINDOWS_CATALOG_PATH = CHOICES_PATH.with_name("windows_lyric_catalog.csv")
+WINDOWS_CATALOG_FIELDS = ("track_name", "artist_name", "album_name", "lrclib_id")
 
 
 class LrcLibError(RuntimeError):
@@ -968,16 +971,50 @@ def _prompt_lrclib_id(records: list[dict], duration_ms: int) -> int | None:
         print("Enter one of the ids listed above.")
 
 
-class LyricChoiceStore:
-    """Remember which LRCLIB id belongs to each Spotify track.
+def media_choice_key(track_name: str, artist_name: str, album_name: str) -> str:
+    """Return the map key for a song identified by title, artist, and album.
 
-    The map is Spotify track id (str) to LRCLIB id (int). It is kept in memory
-    and written to CHOICES_PATH so the same song does not ask again.
-    CATALOG_PATH is a spreadsheet of the same ids plus the song name, artist,
-    album, and duration.
+    Purpose:
+        Windows media sessions have no Spotify track id. Those three strings
+        are what an LRCLIB search uses, so the same triple should reuse one
+        LRCLIB id.
+
+    Parameters:
+        track_name (str): Song title.
+        artist_name (str): Artist string from the media session.
+        album_name (str): Album title. An empty album is part of the key.
+
+    Returns:
+        str: A single key that stays stable for the same three strings.
+
+    Precondition:
+        The three arguments are strings.
+
+    Postcondition:
+        Equal names produce an equal key. No file is written.
+    """
+    return f"{track_name}\u001f{artist_name}\u001f{album_name}"
+
+
+def windows_choice_store() -> "LyricChoiceStore":
+    """Return the choice map that keys LRCLIB ids by title, artist, and album."""
+    return LyricChoiceStore(WINDOWS_CHOICES_PATH, WINDOWS_CATALOG_PATH, WINDOWS_CATALOG_FIELDS)
+
+
+class LyricChoiceStore:
+    """Remember which LRCLIB id belongs to each song.
+
+    The Spotify map is Spotify track id (str) to LRCLIB id (int), stored in
+    CHOICES_PATH and CATALOG_PATH. The Windows map is title, artist, and album
+    to LRCLIB id, stored in WINDOWS_CHOICES_PATH and WINDOWS_CATALOG_PATH.
     """
 
-    def __init__(self, path: Path = CHOICES_PATH) -> None:
+    def __init__(
+        self,
+        path: Path = CHOICES_PATH,
+        catalog_path: Path | None = None,
+        fields: tuple[str, ...] | None = None,
+    ) -> None:
         """Load the saved map, or start from an empty one.
 
         Purpose:
@@ -985,6 +1022,11 @@ class LyricChoiceStore:
 
         Parameters:
             path (Path): JSON file of the map. Defaults to CHOICES_PATH.
+            catalog_path (Path | None): Spreadsheet beside the JSON. Defaults
+                to CATALOG_PATH.
+            fields (tuple[str, ...] | None): Spreadsheet columns. Defaults to
+                CATALOG_FIELDS. A column list without spotify_id is the
+                Windows title/artist/album map.
 
         Returns:
             None.
@@ -993,22 +1035,25 @@ class LyricChoiceStore:
             If path exists, it contains a JSON object.
 
         Postcondition:
-            choices maps Spotify track id strings to integer LRCLIB ids.
-            catalog holds the spreadsheet rows when CATALOG_PATH exists.
+            choices maps each song key to an integer LRCLIB id.
+            catalog holds the spreadsheet rows when the catalog file exists.
         """
         self.path = path
+        self.catalog_path = catalog_path or CATALOG_PATH
+        self.fields = fields or CATALOG_FIELDS
+        self._by_song = "spotify_id" not in self.fields
         self.choices: dict[str, int] = {}
         self.catalog: dict[str, dict[str, str]] = {}
         if path.exists():
             raw = json.loads(path.read_text(encoding="utf-8"))
             if isinstance(raw, dict):
                 self.choices = {str(key): int(value) for key, value in raw.items()}
-        if CATALOG_PATH.exists():
-            with CATALOG_PATH.open(encoding="utf-8-sig", newline="") as handle:
+        if self.catalog_path.exists():
+            with self.catalog_path.open(encoding="utf-8-sig", newline="") as handle:
                 for row in csv.DictReader(handle):
-                    spotify_id = str(row.get("spotify_id") or "")
-                    if spotify_id:
-                        self.catalog[spotify_id] = {field: str(row.get(field) or "") for field in CATALOG_FIELDS}
+                    key = self._catalog_key(row)
+                    if key:
+                        self.catalog[key] = {field: str(row.get(field) or "") for field in self.fields}
 
     def get(self, spotify_id: str) -> int | None:
         """Return the saved LRCLIB id for this Spotify track, or None."""
@@ -1044,18 +1089,27 @@ class LyricChoiceStore:
             spotify_id is non-empty. lrclib_id is an integer. duration_ms is >= 0.
 
         Postcondition:
-            get(spotify_id) returns lrclib_id. CHOICES_PATH contains the map.
-            CATALOG_PATH contains one row for this Spotify track. An unchanged
-            row does not rewrite the files.
+            get(spotify_id) returns lrclib_id. The JSON map and the spreadsheet
+            for this store each contain this song. An unchanged row does not
+            rewrite the files. The Spotify store is lyric_choices.json. The
+            Windows store is windows_lyric_choices.json.
         """
-        row = {
-            "spotify_id": spotify_id,
-            "lrclib_id": str(lrclib_id),
-            "track_name": track_name,
-            "artist_name": artist_name,
-            "album_name": album_name,
-            "duration": format_clock(duration_ms),
-        }
+        if self._by_song:
+            row = {
+                "track_name": track_name,
+                "artist_name": artist_name,
+                "album_name": album_name,
+                "lrclib_id": str(lrclib_id),
+            }
+        else:
+            row = {
+                "spotify_id": spotify_id,
+                "lrclib_id": str(lrclib_id),
+                "track_name": track_name,
+                "artist_name": artist_name,
+                "album_name": album_name,
+                "duration": format_clock(duration_ms),
+            }
         if self.choices.get(spotify_id) == lrclib_id and self.catalog.get(spotify_id) == row:
             return
         self.choices[spotify_id] = lrclib_id
@@ -1070,12 +1124,25 @@ class LyricChoiceStore:
         self.catalog.pop(spotify_id, None)
         self._write()
 
+    def _catalog_key(self, row: dict) -> str:
+        """Return the map key stored in one spreadsheet row."""
+        if self._by_song:
+            return media_choice_key(
+                str(row.get("track_name") or ""),
+                str(row.get("artist_name") or ""),
+                str(row.get("album_name") or ""),
+            )
+        return str(row.get("spotify_id") or "")
+
     def _write(self) -> None:
         """Write the id map and the spreadsheet from the in-memory rows."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.choices, indent=2), encoding="utf-8")
-        with CATALOG_PATH.open("w", encoding="utf-8-sig", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=CATALOG_FIELDS)
+        self.path.write_text(
+            json.dumps(self.choices, indent=2, ensure_ascii=not self._by_song),
+            encoding="utf-8",
+        )
+        with self.catalog_path.open("w", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.fields)
             writer.writeheader()
             for spotify_id in self.choices:
                 row = self.catalog.get(spotify_id)
