@@ -1,0 +1,1949 @@
+{
+  "track_name": "Young And Beautiful",
+  "artist_name": "Lana Del Rey",
+  "album_name": "Young And Beautiful",
+  "duration_ms": 236053,
+  "netease_id": 26243686,
+  "netease_name": "Young And Beautiful",
+  "netease_artist": "Lana Del Rey",
+  "netease_album": "Young And Beautiful",
+  "netease_duration_ms": 236053,
+  "lines": [
+    {
+      "start_ms": 15490,
+      "duration_ms": 2340,
+      "text": "I've seen the world",
+      "words": [
+        {
+          "text": "I've ",
+          "start_ms": 15490,
+          "duration_ms": 240
+        },
+        {
+          "text": "seen ",
+          "start_ms": 15730,
+          "duration_ms": 570
+        },
+        {
+          "text": "the ",
+          "start_ms": 16300,
+          "duration_ms": 270
+        },
+        {
+          "text": "world",
+          "start_ms": 16570,
+          "duration_ms": 1260
+        }
+      ]
+    },
+    {
+      "start_ms": 17830,
+      "duration_ms": 6180,
+      "text": "Done it all, had my cake now",
+      "words": [
+        {
+          "text": "Done ",
+          "start_ms": 17830,
+          "duration_ms": 690
+        },
+        {
+          "text": "it ",
+          "start_ms": 18520,
+          "duration_ms": 300
+        },
+        {
+          "text": "all",
+          "start_ms": 18820,
+          "duration_ms": 780
+        },
+        {
+          "text": ", ",
+          "start_ms": 19600,
+          "duration_ms": 30
+        },
+        {
+          "text": "had ",
+          "start_ms": 19630,
+          "duration_ms": 750
+        },
+        {
+          "text": "my ",
+          "start_ms": 20380,
+          "duration_ms": 630
+        },
+        {
+          "text": "cake ",
+          "start_ms": 21010,
+          "duration_ms": 1140
+        },
+        {
+          "text": "now",
+          "start_ms": 22150,
+          "duration_ms": 1860
+        }
+      ]
+    },
+    {
+      "start_ms": 24040,
+      "duration_ms": 7230,
+      "text": "Diamonds, brilliant, and Bel-Air now",
+      "words": [
+        {
+          "text": "Diamonds",
+          "start_ms": 24040,
+          "duration_ms": 2160
+        },
+        {
+          "text": ", ",
+          "start_ms": 26200,
+          "duration_ms": 0
+        },
+        {
+          "text": "brilliant",
+          "start_ms": 26200,
+          "duration_ms": 1620
+        },
+        {
+          "text": ", ",
+          "start_ms": 27820,
+          "duration_ms": 390
+        },
+        {
+          "text": "and ",
+          "start_ms": 28210,
+          "duration_ms": 510
+        },
+        {
+          "text": "Bel",
+          "start_ms": 28720,
+          "duration_ms": 540
+        },
+        {
+          "text": "-",
+          "start_ms": 29260,
+          "duration_ms": 660
+        },
+        {
+          "text": "Air ",
+          "start_ms": 29920,
+          "duration_ms": 360
+        },
+        {
+          "text": "now",
+          "start_ms": 30280,
+          "duration_ms": 990
+        }
+      ]
+    },
+    {
+      "start_ms": 31780,
+      "duration_ms": 4410,
+      "text": "Hot summer nights mid July",
+      "words": [
+        {
+          "text": "Hot ",
+          "start_ms": 31780,
+          "duration_ms": 450
+        },
+        {
+          "text": "summer ",
+          "start_ms": 32230,
+          "duration_ms": 900
+        },
+        {
+          "text": "nights ",
+          "start_ms": 33130,
+          "duration_ms": 1170
+        },
+        {
+          "text": "mid ",
+          "start_ms": 34300,
+          "duration_ms": 510
+        },
+        {
+          "text": "July",
+          "start_ms": 34810,
+          "duration_ms": 1380
+        }
+      ]
+    },
+    {
+      "start_ms": 36220,
+      "duration_ms": 3960,
+      "text": "When you and I were forever wild",
+      "words": [
+        {
+          "text": "When ",
+          "start_ms": 36220,
+          "duration_ms": 300
+        },
+        {
+          "text": "you ",
+          "start_ms": 36520,
+          "duration_ms": 450
+        },
+        {
+          "text": "and ",
+          "start_ms": 36970,
+          "duration_ms": 390
+        },
+        {
+          "text": "I ",
+          "start_ms": 37360,
+          "duration_ms": 720
+        },
+        {
+          "text": "were ",
+          "start_ms": 38080,
+          "duration_ms": 210
+        },
+        {
+          "text": "forever ",
+          "start_ms": 38290,
+          "duration_ms": 990
+        },
+        {
+          "text": "wild",
+          "start_ms": 39280,
+          "duration_ms": 900
+        }
+      ]
+    },
+    {
+      "start_ms": 40390,
+      "duration_ms": 3840,
+      "text": "The crazy days, the city lights",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 40390,
+          "duration_ms": 150
+        },
+        {
+          "text": "crazy ",
+          "start_ms": 40540,
+          "duration_ms": 900
+        },
+        {
+          "text": "days",
+          "start_ms": 41440,
+          "duration_ms": 1050
+        },
+        {
+          "text": ", ",
+          "start_ms": 42490,
+          "duration_ms": 30
+        },
+        {
+          "text": "the ",
+          "start_ms": 42520,
+          "duration_ms": 60
+        },
+        {
+          "text": "city ",
+          "start_ms": 42580,
+          "duration_ms": 720
+        },
+        {
+          "text": "lights",
+          "start_ms": 43300,
+          "duration_ms": 930
+        }
+      ]
+    },
+    {
+      "start_ms": 44440,
+      "duration_ms": 5130,
+      "text": "The way you'd play with me like a child",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 44440,
+          "duration_ms": 210
+        },
+        {
+          "text": "way ",
+          "start_ms": 44650,
+          "duration_ms": 390
+        },
+        {
+          "text": "you'd ",
+          "start_ms": 45040,
+          "duration_ms": 390
+        },
+        {
+          "text": "play ",
+          "start_ms": 45430,
+          "duration_ms": 840
+        },
+        {
+          "text": "with ",
+          "start_ms": 46270,
+          "duration_ms": 300
+        },
+        {
+          "text": "me ",
+          "start_ms": 46570,
+          "duration_ms": 240
+        },
+        {
+          "text": "like ",
+          "start_ms": 46810,
+          "duration_ms": 570
+        },
+        {
+          "text": "a ",
+          "start_ms": 47380,
+          "duration_ms": 180
+        },
+        {
+          "text": "child",
+          "start_ms": 47560,
+          "duration_ms": 2010
+        }
+      ]
+    },
+    {
+      "start_ms": 49870,
+      "duration_ms": 2040,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 49870,
+          "duration_ms": 390
+        },
+        {
+          "text": "you ",
+          "start_ms": 50260,
+          "duration_ms": 330
+        },
+        {
+          "text": "still ",
+          "start_ms": 50590,
+          "duration_ms": 480
+        },
+        {
+          "text": "love ",
+          "start_ms": 51070,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 51520,
+          "duration_ms": 390
+        }
+      ]
+    },
+    {
+      "start_ms": 51910,
+      "duration_ms": 6060,
+      "text": "when I'm no longer young and beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 51910,
+          "duration_ms": 570
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 52480,
+          "duration_ms": 330
+        },
+        {
+          "text": "no ",
+          "start_ms": 52810,
+          "duration_ms": 210
+        },
+        {
+          "text": "longer ",
+          "start_ms": 53020,
+          "duration_ms": 960
+        },
+        {
+          "text": "young ",
+          "start_ms": 53980,
+          "duration_ms": 960
+        },
+        {
+          "text": "and ",
+          "start_ms": 54940,
+          "duration_ms": 210
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 55150,
+          "duration_ms": 2820
+        }
+      ]
+    },
+    {
+      "start_ms": 58150,
+      "duration_ms": 2010,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 58150,
+          "duration_ms": 450
+        },
+        {
+          "text": "you ",
+          "start_ms": 58600,
+          "duration_ms": 270
+        },
+        {
+          "text": "still ",
+          "start_ms": 58870,
+          "duration_ms": 420
+        },
+        {
+          "text": "love ",
+          "start_ms": 59290,
+          "duration_ms": 480
+        },
+        {
+          "text": "me",
+          "start_ms": 59770,
+          "duration_ms": 390
+        }
+      ]
+    },
+    {
+      "start_ms": 60160,
+      "duration_ms": 4860,
+      "text": "when I got nothing but my aching soul",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 60160,
+          "duration_ms": 570
+        },
+        {
+          "text": "I ",
+          "start_ms": 60730,
+          "duration_ms": 300
+        },
+        {
+          "text": "got ",
+          "start_ms": 61030,
+          "duration_ms": 330
+        },
+        {
+          "text": "nothing ",
+          "start_ms": 61360,
+          "duration_ms": 990
+        },
+        {
+          "text": "but ",
+          "start_ms": 62350,
+          "duration_ms": 750
+        },
+        {
+          "text": "my ",
+          "start_ms": 63100,
+          "duration_ms": 270
+        },
+        {
+          "text": "aching ",
+          "start_ms": 63370,
+          "duration_ms": 870
+        },
+        {
+          "text": "soul",
+          "start_ms": 64240,
+          "duration_ms": 780
+        }
+      ]
+    },
+    {
+      "start_ms": 65170,
+      "duration_ms": 3870,
+      "text": "I know you will, I know you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 65170,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 65440,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 65770,
+          "duration_ms": 420
+        },
+        {
+          "text": "will",
+          "start_ms": 66190,
+          "duration_ms": 780
+        },
+        {
+          "text": ", ",
+          "start_ms": 66970,
+          "duration_ms": 240
+        },
+        {
+          "text": "I ",
+          "start_ms": 67210,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 67480,
+          "duration_ms": 360
+        },
+        {
+          "text": "you ",
+          "start_ms": 67840,
+          "duration_ms": 360
+        },
+        {
+          "text": "will",
+          "start_ms": 68200,
+          "duration_ms": 840
+        }
+      ]
+    },
+    {
+      "start_ms": 69280,
+      "duration_ms": 1290,
+      "text": "I know that you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 69280,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 69550,
+          "duration_ms": 240
+        },
+        {
+          "text": "that ",
+          "start_ms": 69790,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 70120,
+          "duration_ms": 240
+        },
+        {
+          "text": "will",
+          "start_ms": 70360,
+          "duration_ms": 210
+        }
+      ]
+    },
+    {
+      "start_ms": 73060,
+      "duration_ms": 2220,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 73060,
+          "duration_ms": 690
+        },
+        {
+          "text": "you ",
+          "start_ms": 73750,
+          "duration_ms": 210
+        },
+        {
+          "text": "still ",
+          "start_ms": 73960,
+          "duration_ms": 510
+        },
+        {
+          "text": "love ",
+          "start_ms": 74470,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 74920,
+          "duration_ms": 360
+        }
+      ]
+    },
+    {
+      "start_ms": 75490,
+      "duration_ms": 5580,
+      "text": "when I'm no longer beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 75490,
+          "duration_ms": 420
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 75910,
+          "duration_ms": 270
+        },
+        {
+          "text": "no ",
+          "start_ms": 76180,
+          "duration_ms": 510
+        },
+        {
+          "text": "longer ",
+          "start_ms": 76690,
+          "duration_ms": 840
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 77530,
+          "duration_ms": 3540
+        }
+      ]
+    },
+    {
+      "start_ms": 81700,
+      "duration_ms": 8370,
+      "text": "I've seen the world, lit it up as my stage now",
+      "words": [
+        {
+          "text": "I've ",
+          "start_ms": 81700,
+          "duration_ms": 180
+        },
+        {
+          "text": "seen ",
+          "start_ms": 81880,
+          "duration_ms": 660
+        },
+        {
+          "text": "the ",
+          "start_ms": 82540,
+          "duration_ms": 270
+        },
+        {
+          "text": "world",
+          "start_ms": 82810,
+          "duration_ms": 1170
+        },
+        {
+          "text": ", ",
+          "start_ms": 83980,
+          "duration_ms": 0
+        },
+        {
+          "text": "lit ",
+          "start_ms": 83980,
+          "duration_ms": 690
+        },
+        {
+          "text": "it ",
+          "start_ms": 84670,
+          "duration_ms": 330
+        },
+        {
+          "text": "up ",
+          "start_ms": 85000,
+          "duration_ms": 1110
+        },
+        {
+          "text": "as ",
+          "start_ms": 86110,
+          "duration_ms": 540
+        },
+        {
+          "text": "my ",
+          "start_ms": 86650,
+          "duration_ms": 330
+        },
+        {
+          "text": "stage ",
+          "start_ms": 86980,
+          "duration_ms": 1320
+        },
+        {
+          "text": "now",
+          "start_ms": 88300,
+          "duration_ms": 1770
+        }
+      ]
+    },
+    {
+      "start_ms": 90100,
+      "duration_ms": 7650,
+      "text": "Channeling angels in, the new age now",
+      "words": [
+        {
+          "text": "Channeling ",
+          "start_ms": 90100,
+          "duration_ms": 2310
+        },
+        {
+          "text": "angels ",
+          "start_ms": 92410,
+          "duration_ms": 900
+        },
+        {
+          "text": "in",
+          "start_ms": 93310,
+          "duration_ms": 1020
+        },
+        {
+          "text": ", ",
+          "start_ms": 94330,
+          "duration_ms": 30
+        },
+        {
+          "text": "the ",
+          "start_ms": 94360,
+          "duration_ms": 480
+        },
+        {
+          "text": "new ",
+          "start_ms": 94840,
+          "duration_ms": 690
+        },
+        {
+          "text": "age ",
+          "start_ms": 95530,
+          "duration_ms": 960
+        },
+        {
+          "text": "now",
+          "start_ms": 96490,
+          "duration_ms": 1260
+        }
+      ]
+    },
+    {
+      "start_ms": 97780,
+      "duration_ms": 4410,
+      "text": "Hot summer days, rock and roll",
+      "words": [
+        {
+          "text": "Hot ",
+          "start_ms": 97780,
+          "duration_ms": 600
+        },
+        {
+          "text": "summer ",
+          "start_ms": 98380,
+          "duration_ms": 1020
+        },
+        {
+          "text": "days",
+          "start_ms": 99400,
+          "duration_ms": 900
+        },
+        {
+          "text": ", ",
+          "start_ms": 100300,
+          "duration_ms": 270
+        },
+        {
+          "text": "rock ",
+          "start_ms": 100570,
+          "duration_ms": 500
+        },
+        {
+          "text": "and ",
+          "start_ms": 101070,
+          "duration_ms": 240
+        },
+        {
+          "text": "roll",
+          "start_ms": 101310,
+          "duration_ms": 880
+        }
+      ]
+    },
+    {
+      "start_ms": 102400,
+      "duration_ms": 4050,
+      "text": "The way you'd play for me at your show",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 102400,
+          "duration_ms": 210
+        },
+        {
+          "text": "way ",
+          "start_ms": 102610,
+          "duration_ms": 450
+        },
+        {
+          "text": "you'd ",
+          "start_ms": 103060,
+          "duration_ms": 390
+        },
+        {
+          "text": "play ",
+          "start_ms": 103450,
+          "duration_ms": 750
+        },
+        {
+          "text": "for ",
+          "start_ms": 104200,
+          "duration_ms": 330
+        },
+        {
+          "text": "me ",
+          "start_ms": 104530,
+          "duration_ms": 300
+        },
+        {
+          "text": "at ",
+          "start_ms": 104830,
+          "duration_ms": 300
+        },
+        {
+          "text": "your ",
+          "start_ms": 105130,
+          "duration_ms": 390
+        },
+        {
+          "text": "show",
+          "start_ms": 105520,
+          "duration_ms": 930
+        }
+      ]
+    },
+    {
+      "start_ms": 106720,
+      "duration_ms": 3660,
+      "text": "And all the ways I got to know",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 106720,
+          "duration_ms": 180
+        },
+        {
+          "text": "all ",
+          "start_ms": 106900,
+          "duration_ms": 480
+        },
+        {
+          "text": "the ",
+          "start_ms": 107380,
+          "duration_ms": 150
+        },
+        {
+          "text": "ways ",
+          "start_ms": 107530,
+          "duration_ms": 1080
+        },
+        {
+          "text": "I ",
+          "start_ms": 108610,
+          "duration_ms": 180
+        },
+        {
+          "text": "got ",
+          "start_ms": 108790,
+          "duration_ms": 540
+        },
+        {
+          "text": "to ",
+          "start_ms": 109330,
+          "duration_ms": 210
+        },
+        {
+          "text": "know",
+          "start_ms": 109540,
+          "duration_ms": 840
+        }
+      ]
+    },
+    {
+      "start_ms": 110590,
+      "duration_ms": 5040,
+      "text": "Your pretty face and electric soul",
+      "words": [
+        {
+          "text": "Your ",
+          "start_ms": 110590,
+          "duration_ms": 210
+        },
+        {
+          "text": "pretty ",
+          "start_ms": 110800,
+          "duration_ms": 780
+        },
+        {
+          "text": "face ",
+          "start_ms": 111580,
+          "duration_ms": 1020
+        },
+        {
+          "text": "and ",
+          "start_ms": 112600,
+          "duration_ms": 330
+        },
+        {
+          "text": "electric ",
+          "start_ms": 112930,
+          "duration_ms": 870
+        },
+        {
+          "text": "soul",
+          "start_ms": 113800,
+          "duration_ms": 1830
+        }
+      ]
+    },
+    {
+      "start_ms": 116050,
+      "duration_ms": 2070,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 116050,
+          "duration_ms": 420
+        },
+        {
+          "text": "you ",
+          "start_ms": 116470,
+          "duration_ms": 330
+        },
+        {
+          "text": "still ",
+          "start_ms": 116800,
+          "duration_ms": 480
+        },
+        {
+          "text": "love ",
+          "start_ms": 117280,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 117730,
+          "duration_ms": 390
+        }
+      ]
+    },
+    {
+      "start_ms": 118120,
+      "duration_ms": 5820,
+      "text": "when I'm no longer young and beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 118120,
+          "duration_ms": 570
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 118690,
+          "duration_ms": 330
+        },
+        {
+          "text": "no ",
+          "start_ms": 119020,
+          "duration_ms": 210
+        },
+        {
+          "text": "longer ",
+          "start_ms": 119230,
+          "duration_ms": 960
+        },
+        {
+          "text": "young ",
+          "start_ms": 120190,
+          "duration_ms": 990
+        },
+        {
+          "text": "and ",
+          "start_ms": 121180,
+          "duration_ms": 180
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 121360,
+          "duration_ms": 2580
+        }
+      ]
+    },
+    {
+      "start_ms": 124360,
+      "duration_ms": 2010,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 124360,
+          "duration_ms": 450
+        },
+        {
+          "text": "you ",
+          "start_ms": 124810,
+          "duration_ms": 270
+        },
+        {
+          "text": "still ",
+          "start_ms": 125080,
+          "duration_ms": 390
+        },
+        {
+          "text": "love ",
+          "start_ms": 125470,
+          "duration_ms": 480
+        },
+        {
+          "text": "me",
+          "start_ms": 125950,
+          "duration_ms": 420
+        }
+      ]
+    },
+    {
+      "start_ms": 126370,
+      "duration_ms": 4980,
+      "text": "when I got nothing but my aching soul",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 126370,
+          "duration_ms": 570
+        },
+        {
+          "text": "I ",
+          "start_ms": 126940,
+          "duration_ms": 300
+        },
+        {
+          "text": "got ",
+          "start_ms": 127240,
+          "duration_ms": 330
+        },
+        {
+          "text": "nothing ",
+          "start_ms": 127570,
+          "duration_ms": 960
+        },
+        {
+          "text": "but ",
+          "start_ms": 128530,
+          "duration_ms": 780
+        },
+        {
+          "text": "my ",
+          "start_ms": 129310,
+          "duration_ms": 270
+        },
+        {
+          "text": "aching ",
+          "start_ms": 129580,
+          "duration_ms": 870
+        },
+        {
+          "text": "soul",
+          "start_ms": 130450,
+          "duration_ms": 900
+        }
+      ]
+    },
+    {
+      "start_ms": 131380,
+      "duration_ms": 3870,
+      "text": "I know you will, I know you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 131380,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 131650,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 131980,
+          "duration_ms": 420
+        },
+        {
+          "text": "will",
+          "start_ms": 132400,
+          "duration_ms": 780
+        },
+        {
+          "text": ", ",
+          "start_ms": 133180,
+          "duration_ms": 240
+        },
+        {
+          "text": "I ",
+          "start_ms": 133420,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 133690,
+          "duration_ms": 360
+        },
+        {
+          "text": "you ",
+          "start_ms": 134050,
+          "duration_ms": 330
+        },
+        {
+          "text": "will",
+          "start_ms": 134380,
+          "duration_ms": 870
+        }
+      ]
+    },
+    {
+      "start_ms": 135490,
+      "duration_ms": 1290,
+      "text": "I know that you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 135490,
+          "duration_ms": 240
+        },
+        {
+          "text": "know ",
+          "start_ms": 135730,
+          "duration_ms": 270
+        },
+        {
+          "text": "that ",
+          "start_ms": 136000,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 136330,
+          "duration_ms": 240
+        },
+        {
+          "text": "will",
+          "start_ms": 136570,
+          "duration_ms": 210
+        }
+      ]
+    },
+    {
+      "start_ms": 139270,
+      "duration_ms": 2190,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 139270,
+          "duration_ms": 690
+        },
+        {
+          "text": "you ",
+          "start_ms": 139960,
+          "duration_ms": 210
+        },
+        {
+          "text": "still ",
+          "start_ms": 140170,
+          "duration_ms": 510
+        },
+        {
+          "text": "love ",
+          "start_ms": 140680,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 141130,
+          "duration_ms": 330
+        }
+      ]
+    },
+    {
+      "start_ms": 141490,
+      "duration_ms": 5430,
+      "text": "when I'm no longer beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 141490,
+          "duration_ms": 630
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 142120,
+          "duration_ms": 270
+        },
+        {
+          "text": "no ",
+          "start_ms": 142390,
+          "duration_ms": 480
+        },
+        {
+          "text": "longer ",
+          "start_ms": 142870,
+          "duration_ms": 870
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 143740,
+          "duration_ms": 3180
+        }
+      ]
+    },
+    {
+      "start_ms": 148570,
+      "duration_ms": 3780,
+      "text": "Dear lord when I get to heaven",
+      "words": [
+        {
+          "text": "Dear ",
+          "start_ms": 148570,
+          "duration_ms": 660
+        },
+        {
+          "text": "lord ",
+          "start_ms": 149230,
+          "duration_ms": 1080
+        },
+        {
+          "text": "when ",
+          "start_ms": 150310,
+          "duration_ms": 330
+        },
+        {
+          "text": "I ",
+          "start_ms": 150640,
+          "duration_ms": 150
+        },
+        {
+          "text": "get ",
+          "start_ms": 150790,
+          "duration_ms": 300
+        },
+        {
+          "text": "to ",
+          "start_ms": 151090,
+          "duration_ms": 120
+        },
+        {
+          "text": "heaven",
+          "start_ms": 151210,
+          "duration_ms": 1140
+        }
+      ]
+    },
+    {
+      "start_ms": 152800,
+      "duration_ms": 3900,
+      "text": "Please let me bring my man",
+      "words": [
+        {
+          "text": "Please ",
+          "start_ms": 152800,
+          "duration_ms": 660
+        },
+        {
+          "text": "let ",
+          "start_ms": 153460,
+          "duration_ms": 480
+        },
+        {
+          "text": "me ",
+          "start_ms": 153940,
+          "duration_ms": 450
+        },
+        {
+          "text": "bring ",
+          "start_ms": 154390,
+          "duration_ms": 600
+        },
+        {
+          "text": "my ",
+          "start_ms": 154990,
+          "duration_ms": 360
+        },
+        {
+          "text": "man",
+          "start_ms": 155350,
+          "duration_ms": 1350
+        }
+      ]
+    },
+    {
+      "start_ms": 156940,
+      "duration_ms": 3660,
+      "text": "When he comes tell me that you'll let him in",
+      "words": [
+        {
+          "text": "When ",
+          "start_ms": 156940,
+          "duration_ms": 360
+        },
+        {
+          "text": "he ",
+          "start_ms": 157300,
+          "duration_ms": 150
+        },
+        {
+          "text": "comes ",
+          "start_ms": 157450,
+          "duration_ms": 1080
+        },
+        {
+          "text": "tell ",
+          "start_ms": 158530,
+          "duration_ms": 300
+        },
+        {
+          "text": "me ",
+          "start_ms": 158830,
+          "duration_ms": 210
+        },
+        {
+          "text": "that ",
+          "start_ms": 159040,
+          "duration_ms": 330
+        },
+        {
+          "text": "you'll ",
+          "start_ms": 159370,
+          "duration_ms": 270
+        },
+        {
+          "text": "let ",
+          "start_ms": 159640,
+          "duration_ms": 330
+        },
+        {
+          "text": "him ",
+          "start_ms": 159970,
+          "duration_ms": 240
+        },
+        {
+          "text": "in",
+          "start_ms": 160210,
+          "duration_ms": 390
+        }
+      ]
+    },
+    {
+      "start_ms": 161050,
+      "duration_ms": 3570,
+      "text": "Father tell me if you can",
+      "words": [
+        {
+          "text": "Father ",
+          "start_ms": 161050,
+          "duration_ms": 630
+        },
+        {
+          "text": "tell ",
+          "start_ms": 161680,
+          "duration_ms": 510
+        },
+        {
+          "text": "me ",
+          "start_ms": 162190,
+          "duration_ms": 570
+        },
+        {
+          "text": "if ",
+          "start_ms": 162760,
+          "duration_ms": 450
+        },
+        {
+          "text": "you ",
+          "start_ms": 163210,
+          "duration_ms": 240
+        },
+        {
+          "text": "can",
+          "start_ms": 163450,
+          "duration_ms": 1170
+        }
+      ]
+    },
+    {
+      "start_ms": 164680,
+      "duration_ms": 3810,
+      "text": "All that grace, all that body",
+      "words": [
+        {
+          "text": "All ",
+          "start_ms": 164680,
+          "duration_ms": 570
+        },
+        {
+          "text": "that ",
+          "start_ms": 165250,
+          "duration_ms": 510
+        },
+        {
+          "text": "grace",
+          "start_ms": 165760,
+          "duration_ms": 990
+        },
+        {
+          "text": ", ",
+          "start_ms": 166750,
+          "duration_ms": 30
+        },
+        {
+          "text": "all ",
+          "start_ms": 166780,
+          "duration_ms": 330
+        },
+        {
+          "text": "that ",
+          "start_ms": 167110,
+          "duration_ms": 540
+        },
+        {
+          "text": "body",
+          "start_ms": 167650,
+          "duration_ms": 840
+        }
+      ]
+    },
+    {
+      "start_ms": 168850,
+      "duration_ms": 3960,
+      "text": "All that face makes me wanna party",
+      "words": [
+        {
+          "text": "All ",
+          "start_ms": 168850,
+          "duration_ms": 330
+        },
+        {
+          "text": "that ",
+          "start_ms": 169180,
+          "duration_ms": 480
+        },
+        {
+          "text": "face ",
+          "start_ms": 169660,
+          "duration_ms": 1200
+        },
+        {
+          "text": "makes ",
+          "start_ms": 170860,
+          "duration_ms": 390
+        },
+        {
+          "text": "me ",
+          "start_ms": 171250,
+          "duration_ms": 150
+        },
+        {
+          "text": "wanna ",
+          "start_ms": 171400,
+          "duration_ms": 510
+        },
+        {
+          "text": "party",
+          "start_ms": 171910,
+          "duration_ms": 900
+        }
+      ]
+    },
+    {
+      "start_ms": 172840,
+      "duration_ms": 8850,
+      "text": "He's my sun, he makes me shine like diamonds",
+      "words": [
+        {
+          "text": "He's ",
+          "start_ms": 172840,
+          "duration_ms": 540
+        },
+        {
+          "text": "my ",
+          "start_ms": 173380,
+          "duration_ms": 390
+        },
+        {
+          "text": "sun",
+          "start_ms": 173770,
+          "duration_ms": 930
+        },
+        {
+          "text": ", ",
+          "start_ms": 174700,
+          "duration_ms": 0
+        },
+        {
+          "text": "he ",
+          "start_ms": 174700,
+          "duration_ms": 270
+        },
+        {
+          "text": "makes ",
+          "start_ms": 174970,
+          "duration_ms": 450
+        },
+        {
+          "text": "me ",
+          "start_ms": 175420,
+          "duration_ms": 390
+        },
+        {
+          "text": "shine ",
+          "start_ms": 175810,
+          "duration_ms": 1020
+        },
+        {
+          "text": "like ",
+          "start_ms": 176830,
+          "duration_ms": 300
+        },
+        {
+          "text": "diamonds",
+          "start_ms": 177130,
+          "duration_ms": 4560
+        }
+      ]
+    },
+    {
+      "start_ms": 182080,
+      "duration_ms": 2160,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 182080,
+          "duration_ms": 660
+        },
+        {
+          "text": "you ",
+          "start_ms": 182740,
+          "duration_ms": 270
+        },
+        {
+          "text": "still ",
+          "start_ms": 183010,
+          "duration_ms": 390
+        },
+        {
+          "text": "love ",
+          "start_ms": 183400,
+          "duration_ms": 510
+        },
+        {
+          "text": "me",
+          "start_ms": 183910,
+          "duration_ms": 330
+        }
+      ]
+    },
+    {
+      "start_ms": 184240,
+      "duration_ms": 5820,
+      "text": "when I'm no longer young and beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 184240,
+          "duration_ms": 630
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 184870,
+          "duration_ms": 330
+        },
+        {
+          "text": "no ",
+          "start_ms": 185200,
+          "duration_ms": 270
+        },
+        {
+          "text": "longer ",
+          "start_ms": 185470,
+          "duration_ms": 1020
+        },
+        {
+          "text": "young ",
+          "start_ms": 186490,
+          "duration_ms": 900
+        },
+        {
+          "text": "and ",
+          "start_ms": 187390,
+          "duration_ms": 180
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 187570,
+          "duration_ms": 2490
+        }
+      ]
+    },
+    {
+      "start_ms": 190540,
+      "duration_ms": 2040,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 190540,
+          "duration_ms": 480
+        },
+        {
+          "text": "you ",
+          "start_ms": 191020,
+          "duration_ms": 270
+        },
+        {
+          "text": "still ",
+          "start_ms": 191290,
+          "duration_ms": 420
+        },
+        {
+          "text": "love ",
+          "start_ms": 191710,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 192160,
+          "duration_ms": 420
+        }
+      ]
+    },
+    {
+      "start_ms": 192580,
+      "duration_ms": 4860,
+      "text": "when I got nothing but my aching soul",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 192580,
+          "duration_ms": 510
+        },
+        {
+          "text": "I ",
+          "start_ms": 193090,
+          "duration_ms": 300
+        },
+        {
+          "text": "got ",
+          "start_ms": 193390,
+          "duration_ms": 300
+        },
+        {
+          "text": "nothing ",
+          "start_ms": 193690,
+          "duration_ms": 1050
+        },
+        {
+          "text": "but ",
+          "start_ms": 194740,
+          "duration_ms": 750
+        },
+        {
+          "text": "my ",
+          "start_ms": 195490,
+          "duration_ms": 270
+        },
+        {
+          "text": "aching ",
+          "start_ms": 195760,
+          "duration_ms": 810
+        },
+        {
+          "text": "soul",
+          "start_ms": 196570,
+          "duration_ms": 870
+        }
+      ]
+    },
+    {
+      "start_ms": 197590,
+      "duration_ms": 3840,
+      "text": "I know you will, I know you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 197590,
+          "duration_ms": 270
+        },
+        {
+          "text": "know ",
+          "start_ms": 197860,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 198190,
+          "duration_ms": 420
+        },
+        {
+          "text": "will",
+          "start_ms": 198610,
+          "duration_ms": 780
+        },
+        {
+          "text": ", ",
+          "start_ms": 199390,
+          "duration_ms": 210
+        },
+        {
+          "text": "I ",
+          "start_ms": 199600,
+          "duration_ms": 300
+        },
+        {
+          "text": "know ",
+          "start_ms": 199900,
+          "duration_ms": 300
+        },
+        {
+          "text": "you ",
+          "start_ms": 200200,
+          "duration_ms": 480
+        },
+        {
+          "text": "will",
+          "start_ms": 200680,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 201730,
+      "duration_ms": 3900,
+      "text": "I know that you will",
+      "words": [
+        {
+          "text": "I ",
+          "start_ms": 201730,
+          "duration_ms": 240
+        },
+        {
+          "text": "know ",
+          "start_ms": 201970,
+          "duration_ms": 270
+        },
+        {
+          "text": "that ",
+          "start_ms": 202240,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 202570,
+          "duration_ms": 240
+        },
+        {
+          "text": "will",
+          "start_ms": 202810,
+          "duration_ms": 2820
+        }
+      ]
+    },
+    {
+      "start_ms": 205630,
+      "duration_ms": 2280,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 205630,
+          "duration_ms": 510
+        },
+        {
+          "text": "you ",
+          "start_ms": 206140,
+          "duration_ms": 240
+        },
+        {
+          "text": "still ",
+          "start_ms": 206380,
+          "duration_ms": 600
+        },
+        {
+          "text": "love ",
+          "start_ms": 206980,
+          "duration_ms": 480
+        },
+        {
+          "text": "me",
+          "start_ms": 207460,
+          "duration_ms": 450
+        }
+      ]
+    },
+    {
+      "start_ms": 207940,
+      "duration_ms": 5670,
+      "text": "when I'm no longer beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 207940,
+          "duration_ms": 360
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 208300,
+          "duration_ms": 270
+        },
+        {
+          "text": "no ",
+          "start_ms": 208570,
+          "duration_ms": 510
+        },
+        {
+          "text": "longer ",
+          "start_ms": 209080,
+          "duration_ms": 900
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 209980,
+          "duration_ms": 3630
+        }
+      ]
+    },
+    {
+      "start_ms": 214030,
+      "duration_ms": 2160,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 214030,
+          "duration_ms": 420
+        },
+        {
+          "text": "you ",
+          "start_ms": 214450,
+          "duration_ms": 210
+        },
+        {
+          "text": "still ",
+          "start_ms": 214660,
+          "duration_ms": 660
+        },
+        {
+          "text": "love ",
+          "start_ms": 215320,
+          "duration_ms": 450
+        },
+        {
+          "text": "me",
+          "start_ms": 215770,
+          "duration_ms": 420
+        }
+      ]
+    },
+    {
+      "start_ms": 216190,
+      "duration_ms": 6210,
+      "text": "when I'm no longer beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 216190,
+          "duration_ms": 420
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 216610,
+          "duration_ms": 270
+        },
+        {
+          "text": "no ",
+          "start_ms": 216880,
+          "duration_ms": 450
+        },
+        {
+          "text": "longer ",
+          "start_ms": 217330,
+          "duration_ms": 960
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 218290,
+          "duration_ms": 4110
+        }
+      ]
+    },
+    {
+      "start_ms": 222430,
+      "duration_ms": 1890,
+      "text": "Will you still love me",
+      "words": [
+        {
+          "text": "Will ",
+          "start_ms": 222430,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 222760,
+          "duration_ms": 210
+        },
+        {
+          "text": "still ",
+          "start_ms": 222970,
+          "duration_ms": 540
+        },
+        {
+          "text": "love ",
+          "start_ms": 223510,
+          "duration_ms": 420
+        },
+        {
+          "text": "me",
+          "start_ms": 223930,
+          "duration_ms": 390
+        }
+      ]
+    },
+    {
+      "start_ms": 224350,
+      "duration_ms": 5280,
+      "text": "when I'm not young and beautiful",
+      "words": [
+        {
+          "text": "when ",
+          "start_ms": 224350,
+          "duration_ms": 660
+        },
+        {
+          "text": "I'm ",
+          "start_ms": 225010,
+          "duration_ms": 270
+        },
+        {
+          "text": "not ",
+          "start_ms": 225280,
+          "duration_ms": 600
+        },
+        {
+          "text": "young ",
+          "start_ms": 225880,
+          "duration_ms": 840
+        },
+        {
+          "text": "and ",
+          "start_ms": 226720,
+          "duration_ms": 270
+        },
+        {
+          "text": "beautiful",
+          "start_ms": 226990,
+          "duration_ms": 2640
+        }
+      ]
+    }
+  ]
+}

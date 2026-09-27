@@ -1,0 +1,2564 @@
+{
+  "track_name": "A.I.N.Y.",
+  "artist_name": "G.E.M.",
+  "album_name": "18…",
+  "duration_ms": 224493,
+  "netease_id": 26154890,
+  "netease_name": "A.I.N.Y.",
+  "netease_artist": "G.E.M.邓紫棋",
+  "netease_album": "18 Plus",
+  "netease_duration_ms": 224506,
+  "lines": [
+    {
+      "start_ms": 3470,
+      "duration_ms": 3390,
+      "text": "分开以后每个夜晚",
+      "words": [
+        {
+          "text": "分",
+          "start_ms": 3470,
+          "duration_ms": 510
+        },
+        {
+          "text": "开",
+          "start_ms": 3980,
+          "duration_ms": 460
+        },
+        {
+          "text": "以",
+          "start_ms": 4440,
+          "duration_ms": 430
+        },
+        {
+          "text": "后",
+          "start_ms": 4870,
+          "duration_ms": 240
+        },
+        {
+          "text": "每",
+          "start_ms": 5110,
+          "duration_ms": 640
+        },
+        {
+          "text": "个",
+          "start_ms": 5750,
+          "duration_ms": 180
+        },
+        {
+          "text": "夜",
+          "start_ms": 5930,
+          "duration_ms": 420
+        },
+        {
+          "text": "晚",
+          "start_ms": 6350,
+          "duration_ms": 510
+        }
+      ]
+    },
+    {
+      "start_ms": 6990,
+      "duration_ms": 2180,
+      "text": "格外的寂静",
+      "words": [
+        {
+          "text": "格",
+          "start_ms": 6990,
+          "duration_ms": 430
+        },
+        {
+          "text": "外",
+          "start_ms": 7420,
+          "duration_ms": 470
+        },
+        {
+          "text": "的",
+          "start_ms": 7890,
+          "duration_ms": 360
+        },
+        {
+          "text": "寂",
+          "start_ms": 8250,
+          "duration_ms": 370
+        },
+        {
+          "text": "静",
+          "start_ms": 8620,
+          "duration_ms": 550
+        }
+      ]
+    },
+    {
+      "start_ms": 10450,
+      "duration_ms": 2810,
+      "text": "滴答滴答剩大钟",
+      "words": [
+        {
+          "text": "滴",
+          "start_ms": 10450,
+          "duration_ms": 390
+        },
+        {
+          "text": "答",
+          "start_ms": 10840,
+          "duration_ms": 470
+        },
+        {
+          "text": "滴",
+          "start_ms": 11310,
+          "duration_ms": 380
+        },
+        {
+          "text": "答",
+          "start_ms": 11690,
+          "duration_ms": 340
+        },
+        {
+          "text": "剩",
+          "start_ms": 12030,
+          "duration_ms": 570
+        },
+        {
+          "text": "大",
+          "start_ms": 12600,
+          "duration_ms": 220
+        },
+        {
+          "text": "钟",
+          "start_ms": 12820,
+          "duration_ms": 440
+        }
+      ]
+    },
+    {
+      "start_ms": 13380,
+      "duration_ms": 2750,
+      "text": "在陪着我回忆",
+      "words": [
+        {
+          "text": "在",
+          "start_ms": 13380,
+          "duration_ms": 470
+        },
+        {
+          "text": "陪",
+          "start_ms": 13850,
+          "duration_ms": 450
+        },
+        {
+          "text": "着",
+          "start_ms": 14300,
+          "duration_ms": 300
+        },
+        {
+          "text": "我",
+          "start_ms": 14600,
+          "duration_ms": 370
+        },
+        {
+          "text": "回",
+          "start_ms": 14970,
+          "duration_ms": 470
+        },
+        {
+          "text": "忆",
+          "start_ms": 15440,
+          "duration_ms": 690
+        }
+      ]
+    },
+    {
+      "start_ms": 17180,
+      "duration_ms": 3250,
+      "text": "电话里头曾经是你",
+      "words": [
+        {
+          "text": "电",
+          "start_ms": 17180,
+          "duration_ms": 460
+        },
+        {
+          "text": "话",
+          "start_ms": 17640,
+          "duration_ms": 380
+        },
+        {
+          "text": "里",
+          "start_ms": 18020,
+          "duration_ms": 540
+        },
+        {
+          "text": "头",
+          "start_ms": 18560,
+          "duration_ms": 400
+        },
+        {
+          "text": "曾",
+          "start_ms": 18960,
+          "duration_ms": 450
+        },
+        {
+          "text": "经",
+          "start_ms": 19410,
+          "duration_ms": 200
+        },
+        {
+          "text": "是",
+          "start_ms": 19610,
+          "duration_ms": 250
+        },
+        {
+          "text": "你",
+          "start_ms": 19860,
+          "duration_ms": 570
+        }
+      ]
+    },
+    {
+      "start_ms": 20460,
+      "duration_ms": 2870,
+      "text": "最温柔的声音",
+      "words": [
+        {
+          "text": "最",
+          "start_ms": 20460,
+          "duration_ms": 220
+        },
+        {
+          "text": "温",
+          "start_ms": 20680,
+          "duration_ms": 410
+        },
+        {
+          "text": "柔",
+          "start_ms": 21090,
+          "duration_ms": 490
+        },
+        {
+          "text": "的",
+          "start_ms": 21580,
+          "duration_ms": 270
+        },
+        {
+          "text": "声",
+          "start_ms": 21850,
+          "duration_ms": 450
+        },
+        {
+          "text": "音",
+          "start_ms": 22300,
+          "duration_ms": 1030
+        }
+      ]
+    },
+    {
+      "start_ms": 23690,
+      "duration_ms": 1950,
+      "text": "现在只有空气",
+      "words": [
+        {
+          "text": "现",
+          "start_ms": 23690,
+          "duration_ms": 310
+        },
+        {
+          "text": "在",
+          "start_ms": 24000,
+          "duration_ms": 160
+        },
+        {
+          "text": "只",
+          "start_ms": 24160,
+          "duration_ms": 340
+        },
+        {
+          "text": "有",
+          "start_ms": 24500,
+          "duration_ms": 350
+        },
+        {
+          "text": "空",
+          "start_ms": 24850,
+          "duration_ms": 240
+        },
+        {
+          "text": "气",
+          "start_ms": 25090,
+          "duration_ms": 550
+        }
+      ]
+    },
+    {
+      "start_ms": 25760,
+      "duration_ms": 2640,
+      "text": "冷漠地回应",
+      "words": [
+        {
+          "text": "冷",
+          "start_ms": 25760,
+          "duration_ms": 560
+        },
+        {
+          "text": "漠",
+          "start_ms": 26320,
+          "duration_ms": 270
+        },
+        {
+          "text": "地",
+          "start_ms": 26590,
+          "duration_ms": 470
+        },
+        {
+          "text": "回",
+          "start_ms": 27060,
+          "duration_ms": 360
+        },
+        {
+          "text": "应",
+          "start_ms": 27420,
+          "duration_ms": 980
+        }
+      ]
+    },
+    {
+      "start_ms": 30000,
+      "duration_ms": 2520,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 30000,
+          "duration_ms": 1050
+        },
+        {
+          "text": "给",
+          "start_ms": 31050,
+          "duration_ms": 290
+        },
+        {
+          "text": "你",
+          "start_ms": 31340,
+          "duration_ms": 380
+        },
+        {
+          "text": "我",
+          "start_ms": 31720,
+          "duration_ms": 350
+        },
+        {
+          "text": "的",
+          "start_ms": 32070,
+          "duration_ms": 110
+        },
+        {
+          "text": "心",
+          "start_ms": 32180,
+          "duration_ms": 340
+        }
+      ]
+    },
+    {
+      "start_ms": 33330,
+      "duration_ms": 2840,
+      "text": "能否请你别遗弃",
+      "words": [
+        {
+          "text": "能",
+          "start_ms": 33330,
+          "duration_ms": 190
+        },
+        {
+          "text": "否",
+          "start_ms": 33520,
+          "duration_ms": 910
+        },
+        {
+          "text": "请",
+          "start_ms": 34430,
+          "duration_ms": 480
+        },
+        {
+          "text": "你",
+          "start_ms": 34910,
+          "duration_ms": 220
+        },
+        {
+          "text": "别",
+          "start_ms": 35130,
+          "duration_ms": 380
+        },
+        {
+          "text": "遗",
+          "start_ms": 35510,
+          "duration_ms": 320
+        },
+        {
+          "text": "弃",
+          "start_ms": 35830,
+          "duration_ms": 340
+        }
+      ]
+    },
+    {
+      "start_ms": 37460,
+      "duration_ms": 2990,
+      "text": "一句爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "一",
+          "start_ms": 37460,
+          "duration_ms": 210
+        },
+        {
+          "text": "句",
+          "start_ms": 37670,
+          "duration_ms": 300
+        },
+        {
+          "text": "爱",
+          "start_ms": 37970,
+          "duration_ms": 360
+        },
+        {
+          "text": "你",
+          "start_ms": 38330,
+          "duration_ms": 330
+        },
+        {
+          "text": "爱",
+          "start_ms": 38660,
+          "duration_ms": 300
+        },
+        {
+          "text": "你",
+          "start_ms": 38960,
+          "duration_ms": 320
+        },
+        {
+          "text": "爱",
+          "start_ms": 39280,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 39600,
+          "duration_ms": 310
+        },
+        {
+          "text": "爱",
+          "start_ms": 39910,
+          "duration_ms": 340
+        },
+        {
+          "text": "你",
+          "start_ms": 40250,
+          "duration_ms": 200
+        }
+      ]
+    },
+    {
+      "start_ms": 40450,
+      "duration_ms": 2910,
+      "text": "能否再也不分离",
+      "words": [
+        {
+          "text": "能",
+          "start_ms": 40450,
+          "duration_ms": 370
+        },
+        {
+          "text": "否",
+          "start_ms": 40820,
+          "duration_ms": 500
+        },
+        {
+          "text": "再",
+          "start_ms": 41320,
+          "duration_ms": 380
+        },
+        {
+          "text": "也",
+          "start_ms": 41700,
+          "duration_ms": 290
+        },
+        {
+          "text": "不",
+          "start_ms": 41990,
+          "duration_ms": 250
+        },
+        {
+          "text": "分",
+          "start_ms": 42240,
+          "duration_ms": 550
+        },
+        {
+          "text": "离",
+          "start_ms": 42790,
+          "duration_ms": 570
+        }
+      ]
+    },
+    {
+      "start_ms": 43700,
+      "duration_ms": 2540,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 43700,
+          "duration_ms": 1030
+        },
+        {
+          "text": "给",
+          "start_ms": 44730,
+          "duration_ms": 440
+        },
+        {
+          "text": "你",
+          "start_ms": 45170,
+          "duration_ms": 230
+        },
+        {
+          "text": "我",
+          "start_ms": 45400,
+          "duration_ms": 410
+        },
+        {
+          "text": "的",
+          "start_ms": 45810,
+          "duration_ms": 130
+        },
+        {
+          "text": "心",
+          "start_ms": 45940,
+          "duration_ms": 300
+        }
+      ]
+    },
+    {
+      "start_ms": 47060,
+      "duration_ms": 2810,
+      "text": "为什么你却给了我孤寂",
+      "words": [
+        {
+          "text": "为",
+          "start_ms": 47060,
+          "duration_ms": 170
+        },
+        {
+          "text": "什",
+          "start_ms": 47230,
+          "duration_ms": 340
+        },
+        {
+          "text": "么",
+          "start_ms": 47570,
+          "duration_ms": 110
+        },
+        {
+          "text": "你",
+          "start_ms": 47680,
+          "duration_ms": 280
+        },
+        {
+          "text": "却",
+          "start_ms": 47960,
+          "duration_ms": 210
+        },
+        {
+          "text": "给",
+          "start_ms": 48170,
+          "duration_ms": 430
+        },
+        {
+          "text": "了",
+          "start_ms": 48600,
+          "duration_ms": 210
+        },
+        {
+          "text": "我",
+          "start_ms": 48810,
+          "duration_ms": 420
+        },
+        {
+          "text": "孤",
+          "start_ms": 49230,
+          "duration_ms": 330
+        },
+        {
+          "text": "寂",
+          "start_ms": 49560,
+          "duration_ms": 310
+        }
+      ]
+    },
+    {
+      "start_ms": 51130,
+      "duration_ms": 3020,
+      "text": "就算爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "就",
+          "start_ms": 51130,
+          "duration_ms": 290
+        },
+        {
+          "text": "算",
+          "start_ms": 51420,
+          "duration_ms": 520
+        },
+        {
+          "text": "爱",
+          "start_ms": 51940,
+          "duration_ms": 110
+        },
+        {
+          "text": "你",
+          "start_ms": 52050,
+          "duration_ms": 320
+        },
+        {
+          "text": "爱",
+          "start_ms": 52370,
+          "duration_ms": 280
+        },
+        {
+          "text": "你",
+          "start_ms": 52650,
+          "duration_ms": 320
+        },
+        {
+          "text": "爱",
+          "start_ms": 52970,
+          "duration_ms": 310
+        },
+        {
+          "text": "你",
+          "start_ms": 53280,
+          "duration_ms": 350
+        },
+        {
+          "text": "爱",
+          "start_ms": 53630,
+          "duration_ms": 300
+        },
+        {
+          "text": "你",
+          "start_ms": 53930,
+          "duration_ms": 220
+        }
+      ]
+    },
+    {
+      "start_ms": 54150,
+      "duration_ms": 2830,
+      "text": "可能你也不想听",
+      "words": [
+        {
+          "text": "可",
+          "start_ms": 54150,
+          "duration_ms": 450
+        },
+        {
+          "text": "能",
+          "start_ms": 54600,
+          "duration_ms": 440
+        },
+        {
+          "text": "你",
+          "start_ms": 55040,
+          "duration_ms": 480
+        },
+        {
+          "text": "也",
+          "start_ms": 55520,
+          "duration_ms": 180
+        },
+        {
+          "text": "不",
+          "start_ms": 55700,
+          "duration_ms": 240
+        },
+        {
+          "text": "想",
+          "start_ms": 55940,
+          "duration_ms": 460
+        },
+        {
+          "text": "听",
+          "start_ms": 56400,
+          "duration_ms": 580
+        }
+      ]
+    },
+    {
+      "start_ms": 65200,
+      "duration_ms": 2780,
+      "text": "你的拥抱曾经是",
+      "words": [
+        {
+          "text": "你",
+          "start_ms": 65200,
+          "duration_ms": 600
+        },
+        {
+          "text": "的",
+          "start_ms": 65800,
+          "duration_ms": 210
+        },
+        {
+          "text": "拥",
+          "start_ms": 66010,
+          "duration_ms": 590
+        },
+        {
+          "text": "抱",
+          "start_ms": 66600,
+          "duration_ms": 320
+        },
+        {
+          "text": "曾",
+          "start_ms": 66920,
+          "duration_ms": 500
+        },
+        {
+          "text": "经",
+          "start_ms": 67420,
+          "duration_ms": 160
+        },
+        {
+          "text": "是",
+          "start_ms": 67580,
+          "duration_ms": 400
+        }
+      ]
+    },
+    {
+      "start_ms": 68240,
+      "duration_ms": 2720,
+      "text": "最温暖最熟悉",
+      "words": [
+        {
+          "text": "最",
+          "start_ms": 68240,
+          "duration_ms": 380
+        },
+        {
+          "text": "温",
+          "start_ms": 68620,
+          "duration_ms": 350
+        },
+        {
+          "text": "暖",
+          "start_ms": 68970,
+          "duration_ms": 590
+        },
+        {
+          "text": "最",
+          "start_ms": 69560,
+          "duration_ms": 320
+        },
+        {
+          "text": "熟",
+          "start_ms": 69880,
+          "duration_ms": 340
+        },
+        {
+          "text": "悉",
+          "start_ms": 70220,
+          "duration_ms": 740
+        }
+      ]
+    },
+    {
+      "start_ms": 72010,
+      "duration_ms": 3260,
+      "text": "现在换了谁安睡在",
+      "words": [
+        {
+          "text": "现",
+          "start_ms": 72010,
+          "duration_ms": 580
+        },
+        {
+          "text": "在",
+          "start_ms": 72590,
+          "duration_ms": 340
+        },
+        {
+          "text": "换",
+          "start_ms": 72930,
+          "duration_ms": 320
+        },
+        {
+          "text": "了",
+          "start_ms": 73250,
+          "duration_ms": 460
+        },
+        {
+          "text": "谁",
+          "start_ms": 73710,
+          "duration_ms": 670
+        },
+        {
+          "text": "安",
+          "start_ms": 74380,
+          "duration_ms": 80
+        },
+        {
+          "text": "睡",
+          "start_ms": 74460,
+          "duration_ms": 350
+        },
+        {
+          "text": "在",
+          "start_ms": 74810,
+          "duration_ms": 460
+        }
+      ]
+    },
+    {
+      "start_ms": 75270,
+      "duration_ms": 2520,
+      "text": "你胸口的位置",
+      "words": [
+        {
+          "text": "你",
+          "start_ms": 75270,
+          "duration_ms": 270
+        },
+        {
+          "text": "胸",
+          "start_ms": 75540,
+          "duration_ms": 420
+        },
+        {
+          "text": "口",
+          "start_ms": 75960,
+          "duration_ms": 380
+        },
+        {
+          "text": "的",
+          "start_ms": 76340,
+          "duration_ms": 390
+        },
+        {
+          "text": "位",
+          "start_ms": 76730,
+          "duration_ms": 450
+        },
+        {
+          "text": "置",
+          "start_ms": 77180,
+          "duration_ms": 610
+        }
+      ]
+    },
+    {
+      "start_ms": 78880,
+      "duration_ms": 3380,
+      "text": "你的承诺曾是一种",
+      "words": [
+        {
+          "text": "你",
+          "start_ms": 78880,
+          "duration_ms": 640
+        },
+        {
+          "text": "的",
+          "start_ms": 79520,
+          "duration_ms": 230
+        },
+        {
+          "text": "承",
+          "start_ms": 79750,
+          "duration_ms": 430
+        },
+        {
+          "text": "诺",
+          "start_ms": 80180,
+          "duration_ms": 450
+        },
+        {
+          "text": "曾",
+          "start_ms": 80630,
+          "duration_ms": 390
+        },
+        {
+          "text": "是",
+          "start_ms": 81020,
+          "duration_ms": 370
+        },
+        {
+          "text": "一",
+          "start_ms": 81390,
+          "duration_ms": 270
+        },
+        {
+          "text": "种",
+          "start_ms": 81660,
+          "duration_ms": 600
+        }
+      ]
+    },
+    {
+      "start_ms": 82260,
+      "duration_ms": 2830,
+      "text": "不自觉的甜蜜",
+      "words": [
+        {
+          "text": "不",
+          "start_ms": 82260,
+          "duration_ms": 120
+        },
+        {
+          "text": "自",
+          "start_ms": 82380,
+          "duration_ms": 460
+        },
+        {
+          "text": "觉",
+          "start_ms": 82840,
+          "duration_ms": 470
+        },
+        {
+          "text": "的",
+          "start_ms": 83310,
+          "duration_ms": 290
+        },
+        {
+          "text": "甜",
+          "start_ms": 83600,
+          "duration_ms": 270
+        },
+        {
+          "text": "蜜",
+          "start_ms": 83870,
+          "duration_ms": 1220
+        }
+      ]
+    },
+    {
+      "start_ms": 85340,
+      "duration_ms": 2050,
+      "text": "现在一划一笔",
+      "words": [
+        {
+          "text": "现",
+          "start_ms": 85340,
+          "duration_ms": 340
+        },
+        {
+          "text": "在",
+          "start_ms": 85680,
+          "duration_ms": 220
+        },
+        {
+          "text": "一",
+          "start_ms": 85900,
+          "duration_ms": 330
+        },
+        {
+          "text": "划",
+          "start_ms": 86230,
+          "duration_ms": 410
+        },
+        {
+          "text": "一",
+          "start_ms": 86640,
+          "duration_ms": 210
+        },
+        {
+          "text": "笔",
+          "start_ms": 86850,
+          "duration_ms": 540
+        }
+      ]
+    },
+    {
+      "start_ms": 87480,
+      "duration_ms": 3710,
+      "text": "刺在我心里",
+      "words": [
+        {
+          "text": "刺",
+          "start_ms": 87480,
+          "duration_ms": 530
+        },
+        {
+          "text": "在",
+          "start_ms": 88010,
+          "duration_ms": 270
+        },
+        {
+          "text": "我",
+          "start_ms": 88280,
+          "duration_ms": 230
+        },
+        {
+          "text": "心",
+          "start_ms": 88510,
+          "duration_ms": 530
+        },
+        {
+          "text": "里",
+          "start_ms": 89040,
+          "duration_ms": 2150
+        }
+      ]
+    },
+    {
+      "start_ms": 91670,
+      "duration_ms": 2880,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 91670,
+          "duration_ms": 1040
+        },
+        {
+          "text": "给",
+          "start_ms": 92710,
+          "duration_ms": 310
+        },
+        {
+          "text": "你",
+          "start_ms": 93020,
+          "duration_ms": 380
+        },
+        {
+          "text": "我",
+          "start_ms": 93400,
+          "duration_ms": 410
+        },
+        {
+          "text": "的",
+          "start_ms": 93810,
+          "duration_ms": 80
+        },
+        {
+          "text": "心",
+          "start_ms": 93890,
+          "duration_ms": 660
+        }
+      ]
+    },
+    {
+      "start_ms": 95160,
+      "duration_ms": 2720,
+      "text": "能否请你别遗弃",
+      "words": [
+        {
+          "text": "能",
+          "start_ms": 95160,
+          "duration_ms": 120
+        },
+        {
+          "text": "否",
+          "start_ms": 95280,
+          "duration_ms": 790
+        },
+        {
+          "text": "请",
+          "start_ms": 96070,
+          "duration_ms": 350
+        },
+        {
+          "text": "你",
+          "start_ms": 96420,
+          "duration_ms": 390
+        },
+        {
+          "text": "别",
+          "start_ms": 96810,
+          "duration_ms": 340
+        },
+        {
+          "text": "遗",
+          "start_ms": 97150,
+          "duration_ms": 380
+        },
+        {
+          "text": "弃",
+          "start_ms": 97530,
+          "duration_ms": 350
+        }
+      ]
+    },
+    {
+      "start_ms": 99150,
+      "duration_ms": 3000,
+      "text": "一句爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "一",
+          "start_ms": 99150,
+          "duration_ms": 240
+        },
+        {
+          "text": "句",
+          "start_ms": 99390,
+          "duration_ms": 290
+        },
+        {
+          "text": "爱",
+          "start_ms": 99680,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 100000,
+          "duration_ms": 300
+        },
+        {
+          "text": "爱",
+          "start_ms": 100300,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 100620,
+          "duration_ms": 300
+        },
+        {
+          "text": "爱",
+          "start_ms": 100920,
+          "duration_ms": 630
+        },
+        {
+          "text": "你",
+          "start_ms": 101550,
+          "duration_ms": 60
+        },
+        {
+          "text": "爱",
+          "start_ms": 101610,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 101930,
+          "duration_ms": 220
+        }
+      ]
+    },
+    {
+      "start_ms": 102150,
+      "duration_ms": 2440,
+      "text": "能否再也不分离",
+      "words": [
+        {
+          "text": "能",
+          "start_ms": 102150,
+          "duration_ms": 240
+        },
+        {
+          "text": "否",
+          "start_ms": 102390,
+          "duration_ms": 610
+        },
+        {
+          "text": "再",
+          "start_ms": 103000,
+          "duration_ms": 400
+        },
+        {
+          "text": "也",
+          "start_ms": 103400,
+          "duration_ms": 270
+        },
+        {
+          "text": "不",
+          "start_ms": 103670,
+          "duration_ms": 280
+        },
+        {
+          "text": "分",
+          "start_ms": 103950,
+          "duration_ms": 480
+        },
+        {
+          "text": "离",
+          "start_ms": 104430,
+          "duration_ms": 160
+        }
+      ]
+    },
+    {
+      "start_ms": 104590,
+      "duration_ms": 3560,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 104590,
+          "duration_ms": 1830
+        },
+        {
+          "text": "给",
+          "start_ms": 106420,
+          "duration_ms": 430
+        },
+        {
+          "text": "你",
+          "start_ms": 106850,
+          "duration_ms": 270
+        },
+        {
+          "text": "我",
+          "start_ms": 107120,
+          "duration_ms": 410
+        },
+        {
+          "text": "的",
+          "start_ms": 107530,
+          "duration_ms": 90
+        },
+        {
+          "text": "心",
+          "start_ms": 107620,
+          "duration_ms": 530
+        }
+      ]
+    },
+    {
+      "start_ms": 108790,
+      "duration_ms": 2770,
+      "text": "为什么你却给了我孤寂",
+      "words": [
+        {
+          "text": "为",
+          "start_ms": 108790,
+          "duration_ms": 130
+        },
+        {
+          "text": "什",
+          "start_ms": 108920,
+          "duration_ms": 300
+        },
+        {
+          "text": "么",
+          "start_ms": 109220,
+          "duration_ms": 220
+        },
+        {
+          "text": "你",
+          "start_ms": 109440,
+          "duration_ms": 210
+        },
+        {
+          "text": "却",
+          "start_ms": 109650,
+          "duration_ms": 200
+        },
+        {
+          "text": "给",
+          "start_ms": 109850,
+          "duration_ms": 300
+        },
+        {
+          "text": "了",
+          "start_ms": 110150,
+          "duration_ms": 370
+        },
+        {
+          "text": "我",
+          "start_ms": 110520,
+          "duration_ms": 280
+        },
+        {
+          "text": "孤",
+          "start_ms": 110800,
+          "duration_ms": 430
+        },
+        {
+          "text": "寂",
+          "start_ms": 111230,
+          "duration_ms": 330
+        }
+      ]
+    },
+    {
+      "start_ms": 112850,
+      "duration_ms": 2980,
+      "text": "就算爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "就",
+          "start_ms": 112850,
+          "duration_ms": 220
+        },
+        {
+          "text": "算",
+          "start_ms": 113070,
+          "duration_ms": 570
+        },
+        {
+          "text": "爱",
+          "start_ms": 113640,
+          "duration_ms": 100
+        },
+        {
+          "text": "你",
+          "start_ms": 113740,
+          "duration_ms": 300
+        },
+        {
+          "text": "爱",
+          "start_ms": 114040,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 114360,
+          "duration_ms": 270
+        },
+        {
+          "text": "爱",
+          "start_ms": 114630,
+          "duration_ms": 500
+        },
+        {
+          "text": "你",
+          "start_ms": 115130,
+          "duration_ms": 60
+        },
+        {
+          "text": "爱",
+          "start_ms": 115190,
+          "duration_ms": 490
+        },
+        {
+          "text": "你",
+          "start_ms": 115680,
+          "duration_ms": 150
+        }
+      ]
+    },
+    {
+      "start_ms": 116330,
+      "duration_ms": 2260,
+      "text": "可能你也不想听",
+      "words": [
+        {
+          "text": "可",
+          "start_ms": 116330,
+          "duration_ms": 60
+        },
+        {
+          "text": "能",
+          "start_ms": 116390,
+          "duration_ms": 350
+        },
+        {
+          "text": "你",
+          "start_ms": 116740,
+          "duration_ms": 470
+        },
+        {
+          "text": "也",
+          "start_ms": 117210,
+          "duration_ms": 200
+        },
+        {
+          "text": "不",
+          "start_ms": 117410,
+          "duration_ms": 270
+        },
+        {
+          "text": "想",
+          "start_ms": 117680,
+          "duration_ms": 500
+        },
+        {
+          "text": "听",
+          "start_ms": 118180,
+          "duration_ms": 410
+        }
+      ]
+    },
+    {
+      "start_ms": 118590,
+      "duration_ms": 16600,
+      "text": "你不想听",
+      "words": [
+        {
+          "text": "你",
+          "start_ms": 118590,
+          "duration_ms": 4150
+        },
+        {
+          "text": "不",
+          "start_ms": 122740,
+          "duration_ms": 4150
+        },
+        {
+          "text": "想",
+          "start_ms": 126890,
+          "duration_ms": 4150
+        },
+        {
+          "text": "听",
+          "start_ms": 131040,
+          "duration_ms": 4150
+        }
+      ]
+    },
+    {
+      "start_ms": 140720,
+      "duration_ms": 580,
+      "text": "回忆",
+      "words": [
+        {
+          "text": "回",
+          "start_ms": 140720,
+          "duration_ms": 220
+        },
+        {
+          "text": "忆",
+          "start_ms": 140940,
+          "duration_ms": 360
+        }
+      ]
+    },
+    {
+      "start_ms": 141330,
+      "duration_ms": 1120,
+      "text": "最后的回忆",
+      "words": [
+        {
+          "text": "最",
+          "start_ms": 141330,
+          "duration_ms": 224
+        },
+        {
+          "text": "后",
+          "start_ms": 141554,
+          "duration_ms": 224
+        },
+        {
+          "text": "的",
+          "start_ms": 141778,
+          "duration_ms": 224
+        },
+        {
+          "text": "回",
+          "start_ms": 142002,
+          "duration_ms": 224
+        },
+        {
+          "text": "忆",
+          "start_ms": 142226,
+          "duration_ms": 224
+        }
+      ]
+    },
+    {
+      "start_ms": 142650,
+      "duration_ms": 1420,
+      "text": "对你最后的回忆",
+      "words": [
+        {
+          "text": "对",
+          "start_ms": 142650,
+          "duration_ms": 180
+        },
+        {
+          "text": "你",
+          "start_ms": 142830,
+          "duration_ms": 240
+        },
+        {
+          "text": "最",
+          "start_ms": 143070,
+          "duration_ms": 210
+        },
+        {
+          "text": "后",
+          "start_ms": 143280,
+          "duration_ms": 240
+        },
+        {
+          "text": "的",
+          "start_ms": 143520,
+          "duration_ms": 140
+        },
+        {
+          "text": "回",
+          "start_ms": 143660,
+          "duration_ms": 240
+        },
+        {
+          "text": "忆",
+          "start_ms": 143900,
+          "duration_ms": 170
+        }
+      ]
+    },
+    {
+      "start_ms": 144070,
+      "duration_ms": 600,
+      "text": "是你",
+      "words": [
+        {
+          "text": "是",
+          "start_ms": 144070,
+          "duration_ms": 200
+        },
+        {
+          "text": "你",
+          "start_ms": 144270,
+          "duration_ms": 400
+        }
+      ]
+    },
+    {
+      "start_ms": 144670,
+      "duration_ms": 1190,
+      "text": "走远的身影",
+      "words": [
+        {
+          "text": "走",
+          "start_ms": 144670,
+          "duration_ms": 350
+        },
+        {
+          "text": "远",
+          "start_ms": 145020,
+          "duration_ms": 150
+        },
+        {
+          "text": "的",
+          "start_ms": 145170,
+          "duration_ms": 180
+        },
+        {
+          "text": "身",
+          "start_ms": 145350,
+          "duration_ms": 330
+        },
+        {
+          "text": "影",
+          "start_ms": 145680,
+          "duration_ms": 180
+        }
+      ]
+    },
+    {
+      "start_ms": 146090,
+      "duration_ms": 1510,
+      "text": "慢慢走远的身影",
+      "words": [
+        {
+          "text": "慢",
+          "start_ms": 146090,
+          "duration_ms": 140
+        },
+        {
+          "text": "慢",
+          "start_ms": 146230,
+          "duration_ms": 290
+        },
+        {
+          "text": "走",
+          "start_ms": 146520,
+          "duration_ms": 170
+        },
+        {
+          "text": "远",
+          "start_ms": 146690,
+          "duration_ms": 250
+        },
+        {
+          "text": "的",
+          "start_ms": 146940,
+          "duration_ms": 150
+        },
+        {
+          "text": "身",
+          "start_ms": 147090,
+          "duration_ms": 240
+        },
+        {
+          "text": "影",
+          "start_ms": 147330,
+          "duration_ms": 270
+        }
+      ]
+    },
+    {
+      "start_ms": 147600,
+      "duration_ms": 960,
+      "text": "然后你",
+      "words": [
+        {
+          "text": "然",
+          "start_ms": 147600,
+          "duration_ms": 190
+        },
+        {
+          "text": "后",
+          "start_ms": 147790,
+          "duration_ms": 420
+        },
+        {
+          "text": "你",
+          "start_ms": 148210,
+          "duration_ms": 350
+        }
+      ]
+    },
+    {
+      "start_ms": 148750,
+      "duration_ms": 380,
+      "text": "离开了",
+      "words": [
+        {
+          "text": "离",
+          "start_ms": 148750,
+          "duration_ms": 126
+        },
+        {
+          "text": "开",
+          "start_ms": 148876,
+          "duration_ms": 126
+        },
+        {
+          "text": "了",
+          "start_ms": 149002,
+          "duration_ms": 128
+        }
+      ]
+    },
+    {
+      "start_ms": 149490,
+      "duration_ms": 1480,
+      "text": "离开了没有痕迹",
+      "words": [
+        {
+          "text": "离",
+          "start_ms": 149490,
+          "duration_ms": 200
+        },
+        {
+          "text": "开",
+          "start_ms": 149690,
+          "duration_ms": 250
+        },
+        {
+          "text": "了",
+          "start_ms": 149940,
+          "duration_ms": 100
+        },
+        {
+          "text": "没",
+          "start_ms": 150040,
+          "duration_ms": 250
+        },
+        {
+          "text": "有",
+          "start_ms": 150290,
+          "duration_ms": 250
+        },
+        {
+          "text": "痕",
+          "start_ms": 150540,
+          "duration_ms": 220
+        },
+        {
+          "text": "迹",
+          "start_ms": 150760,
+          "duration_ms": 210
+        }
+      ]
+    },
+    {
+      "start_ms": 150970,
+      "duration_ms": 1530,
+      "text": "然后我 哭泣",
+      "words": [
+        {
+          "text": "然",
+          "start_ms": 150970,
+          "duration_ms": 230
+        },
+        {
+          "text": "后",
+          "start_ms": 151200,
+          "duration_ms": 390
+        },
+        {
+          "text": "我 ",
+          "start_ms": 151590,
+          "duration_ms": 340
+        },
+        {
+          "text": "哭",
+          "start_ms": 151930,
+          "duration_ms": 260
+        },
+        {
+          "text": "泣",
+          "start_ms": 152190,
+          "duration_ms": 310
+        }
+      ]
+    },
+    {
+      "start_ms": 152950,
+      "duration_ms": 1450,
+      "text": "崩溃了放纵哭泣",
+      "words": [
+        {
+          "text": "崩",
+          "start_ms": 152950,
+          "duration_ms": 150
+        },
+        {
+          "text": "溃",
+          "start_ms": 153100,
+          "duration_ms": 280
+        },
+        {
+          "text": "了",
+          "start_ms": 153380,
+          "duration_ms": 140
+        },
+        {
+          "text": "放",
+          "start_ms": 153520,
+          "duration_ms": 240
+        },
+        {
+          "text": "纵",
+          "start_ms": 153760,
+          "duration_ms": 170
+        },
+        {
+          "text": "哭",
+          "start_ms": 153930,
+          "duration_ms": 270
+        },
+        {
+          "text": "泣",
+          "start_ms": 154200,
+          "duration_ms": 200
+        }
+      ]
+    },
+    {
+      "start_ms": 154400,
+      "duration_ms": 1160,
+      "text": "恨你恨你",
+      "words": [
+        {
+          "text": "恨",
+          "start_ms": 154400,
+          "duration_ms": 190
+        },
+        {
+          "text": "你",
+          "start_ms": 154590,
+          "duration_ms": 470
+        },
+        {
+          "text": "恨",
+          "start_ms": 155060,
+          "duration_ms": 160
+        },
+        {
+          "text": "你",
+          "start_ms": 155220,
+          "duration_ms": 340
+        }
+      ]
+    },
+    {
+      "start_ms": 156350,
+      "duration_ms": 1470,
+      "text": "每当我想起曾经",
+      "words": [
+        {
+          "text": "每",
+          "start_ms": 156350,
+          "duration_ms": 250
+        },
+        {
+          "text": "当",
+          "start_ms": 156600,
+          "duration_ms": 200
+        },
+        {
+          "text": "我",
+          "start_ms": 156800,
+          "duration_ms": 110
+        },
+        {
+          "text": "想",
+          "start_ms": 156910,
+          "duration_ms": 310
+        },
+        {
+          "text": "起",
+          "start_ms": 157220,
+          "duration_ms": 190
+        },
+        {
+          "text": "曾",
+          "start_ms": 157410,
+          "duration_ms": 230
+        },
+        {
+          "text": "经",
+          "start_ms": 157640,
+          "duration_ms": 180
+        }
+      ]
+    },
+    {
+      "start_ms": 157820,
+      "duration_ms": 1100,
+      "text": "曾经曾经",
+      "words": [
+        {
+          "text": "曾",
+          "start_ms": 157820,
+          "duration_ms": 250
+        },
+        {
+          "text": "经",
+          "start_ms": 158070,
+          "duration_ms": 210
+        },
+        {
+          "text": "曾",
+          "start_ms": 158280,
+          "duration_ms": 410
+        },
+        {
+          "text": "经",
+          "start_ms": 158690,
+          "duration_ms": 230
+        }
+      ]
+    },
+    {
+      "start_ms": 158920,
+      "duration_ms": 1280,
+      "text": "曾经曾经",
+      "words": [
+        {
+          "text": "曾",
+          "start_ms": 158920,
+          "duration_ms": 420
+        },
+        {
+          "text": "经",
+          "start_ms": 159340,
+          "duration_ms": 420
+        },
+        {
+          "text": "曾",
+          "start_ms": 159760,
+          "duration_ms": 230
+        },
+        {
+          "text": "经",
+          "start_ms": 159990,
+          "duration_ms": 210
+        }
+      ]
+    },
+    {
+      "start_ms": 160200,
+      "duration_ms": 1640,
+      "text": "Yeah~~",
+      "words": [
+        {
+          "text": "Yeah",
+          "start_ms": 160200,
+          "duration_ms": 1640
+        },
+        {
+          "text": "~",
+          "start_ms": 161840,
+          "duration_ms": 0
+        },
+        {
+          "text": "~",
+          "start_ms": 161840,
+          "duration_ms": 0
+        }
+      ]
+    },
+    {
+      "start_ms": 161840,
+      "duration_ms": 7540,
+      "text": "Yeah~",
+      "words": [
+        {
+          "text": "Yeah",
+          "start_ms": 161840,
+          "duration_ms": 540
+        },
+        {
+          "text": "~",
+          "start_ms": 162380,
+          "duration_ms": 7000
+        }
+      ]
+    },
+    {
+      "start_ms": 169380,
+      "duration_ms": 3060,
+      "text": "还是爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "还",
+          "start_ms": 169380,
+          "duration_ms": 250
+        },
+        {
+          "text": "是",
+          "start_ms": 169630,
+          "duration_ms": 610
+        },
+        {
+          "text": "爱",
+          "start_ms": 170240,
+          "duration_ms": 40
+        },
+        {
+          "text": "你",
+          "start_ms": 170280,
+          "duration_ms": 330
+        },
+        {
+          "text": "爱",
+          "start_ms": 170610,
+          "duration_ms": 340
+        },
+        {
+          "text": "你",
+          "start_ms": 170950,
+          "duration_ms": 300
+        },
+        {
+          "text": "爱",
+          "start_ms": 171250,
+          "duration_ms": 320
+        },
+        {
+          "text": "你",
+          "start_ms": 171570,
+          "duration_ms": 330
+        },
+        {
+          "text": "爱",
+          "start_ms": 171900,
+          "duration_ms": 300
+        },
+        {
+          "text": "你",
+          "start_ms": 172200,
+          "duration_ms": 240
+        }
+      ]
+    },
+    {
+      "start_ms": 172440,
+      "duration_ms": 2560,
+      "text": "难道还不能清醒",
+      "words": [
+        {
+          "text": "难",
+          "start_ms": 172440,
+          "duration_ms": 430
+        },
+        {
+          "text": "道",
+          "start_ms": 172870,
+          "duration_ms": 380
+        },
+        {
+          "text": "还",
+          "start_ms": 173250,
+          "duration_ms": 480
+        },
+        {
+          "text": "不",
+          "start_ms": 173730,
+          "duration_ms": 230
+        },
+        {
+          "text": "能",
+          "start_ms": 173960,
+          "duration_ms": 360
+        },
+        {
+          "text": "清",
+          "start_ms": 174320,
+          "duration_ms": 360
+        },
+        {
+          "text": "醒",
+          "start_ms": 174680,
+          "duration_ms": 320
+        }
+      ]
+    },
+    {
+      "start_ms": 176690,
+      "duration_ms": 1750,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 176690,
+          "duration_ms": 30
+        },
+        {
+          "text": "给",
+          "start_ms": 176720,
+          "duration_ms": 450
+        },
+        {
+          "text": "你",
+          "start_ms": 177170,
+          "duration_ms": 230
+        },
+        {
+          "text": "我",
+          "start_ms": 177400,
+          "duration_ms": 370
+        },
+        {
+          "text": "的",
+          "start_ms": 177770,
+          "duration_ms": 120
+        },
+        {
+          "text": "心",
+          "start_ms": 177890,
+          "duration_ms": 550
+        }
+      ]
+    },
+    {
+      "start_ms": 179030,
+      "duration_ms": 4310,
+      "text": "为什么你却给了我孤寂",
+      "words": [
+        {
+          "text": "为",
+          "start_ms": 179030,
+          "duration_ms": 431
+        },
+        {
+          "text": "什",
+          "start_ms": 179461,
+          "duration_ms": 431
+        },
+        {
+          "text": "么",
+          "start_ms": 179892,
+          "duration_ms": 431
+        },
+        {
+          "text": "你",
+          "start_ms": 180323,
+          "duration_ms": 431
+        },
+        {
+          "text": "却",
+          "start_ms": 180754,
+          "duration_ms": 431
+        },
+        {
+          "text": "给",
+          "start_ms": 181185,
+          "duration_ms": 431
+        },
+        {
+          "text": "了",
+          "start_ms": 181616,
+          "duration_ms": 431
+        },
+        {
+          "text": "我",
+          "start_ms": 182047,
+          "duration_ms": 431
+        },
+        {
+          "text": "孤",
+          "start_ms": 182478,
+          "duration_ms": 431
+        },
+        {
+          "text": "寂",
+          "start_ms": 182909,
+          "duration_ms": 431
+        }
+      ]
+    },
+    {
+      "start_ms": 183340,
+      "duration_ms": 2820,
+      "text": "一句爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "一",
+          "start_ms": 183340,
+          "duration_ms": 282
+        },
+        {
+          "text": "句",
+          "start_ms": 183622,
+          "duration_ms": 282
+        },
+        {
+          "text": "爱",
+          "start_ms": 183904,
+          "duration_ms": 282
+        },
+        {
+          "text": "你",
+          "start_ms": 184186,
+          "duration_ms": 282
+        },
+        {
+          "text": "爱",
+          "start_ms": 184468,
+          "duration_ms": 282
+        },
+        {
+          "text": "你",
+          "start_ms": 184750,
+          "duration_ms": 282
+        },
+        {
+          "text": "爱",
+          "start_ms": 185032,
+          "duration_ms": 282
+        },
+        {
+          "text": "你",
+          "start_ms": 185314,
+          "duration_ms": 282
+        },
+        {
+          "text": "爱",
+          "start_ms": 185596,
+          "duration_ms": 282
+        },
+        {
+          "text": "你",
+          "start_ms": 185878,
+          "duration_ms": 282
+        }
+      ]
+    },
+    {
+      "start_ms": 186160,
+      "duration_ms": 2630,
+      "text": "难道你也不想听",
+      "words": [
+        {
+          "text": "难",
+          "start_ms": 186160,
+          "duration_ms": 410
+        },
+        {
+          "text": "道",
+          "start_ms": 186570,
+          "duration_ms": 360
+        },
+        {
+          "text": "你",
+          "start_ms": 186930,
+          "duration_ms": 540
+        },
+        {
+          "text": "也",
+          "start_ms": 187470,
+          "duration_ms": 230
+        },
+        {
+          "text": "不",
+          "start_ms": 187700,
+          "duration_ms": 260
+        },
+        {
+          "text": "想",
+          "start_ms": 187960,
+          "duration_ms": 470
+        },
+        {
+          "text": "听",
+          "start_ms": 188430,
+          "duration_ms": 360
+        }
+      ]
+    },
+    {
+      "start_ms": 190900,
+      "duration_ms": 1240,
+      "text": "OH 给你我的心",
+      "words": [
+        {
+          "text": "OH ",
+          "start_ms": 190900,
+          "duration_ms": 206
+        },
+        {
+          "text": "给",
+          "start_ms": 191106,
+          "duration_ms": 206
+        },
+        {
+          "text": "你",
+          "start_ms": 191312,
+          "duration_ms": 206
+        },
+        {
+          "text": "我",
+          "start_ms": 191518,
+          "duration_ms": 206
+        },
+        {
+          "text": "的",
+          "start_ms": 191724,
+          "duration_ms": 206
+        },
+        {
+          "text": "心",
+          "start_ms": 191930,
+          "duration_ms": 210
+        }
+      ]
+    },
+    {
+      "start_ms": 192850,
+      "duration_ms": 3580,
+      "text": "为什么你却给了我孤寂",
+      "words": [
+        {
+          "text": "为",
+          "start_ms": 192850,
+          "duration_ms": 358
+        },
+        {
+          "text": "什",
+          "start_ms": 193208,
+          "duration_ms": 358
+        },
+        {
+          "text": "么",
+          "start_ms": 193566,
+          "duration_ms": 358
+        },
+        {
+          "text": "你",
+          "start_ms": 193924,
+          "duration_ms": 358
+        },
+        {
+          "text": "却",
+          "start_ms": 194282,
+          "duration_ms": 358
+        },
+        {
+          "text": "给",
+          "start_ms": 194640,
+          "duration_ms": 358
+        },
+        {
+          "text": "了",
+          "start_ms": 194998,
+          "duration_ms": 358
+        },
+        {
+          "text": "我",
+          "start_ms": 195356,
+          "duration_ms": 358
+        },
+        {
+          "text": "孤",
+          "start_ms": 195714,
+          "duration_ms": 358
+        },
+        {
+          "text": "寂",
+          "start_ms": 196072,
+          "duration_ms": 358
+        }
+      ]
+    },
+    {
+      "start_ms": 196850,
+      "duration_ms": 3040,
+      "text": "就算爱你爱你爱你爱你",
+      "words": [
+        {
+          "text": "就",
+          "start_ms": 196850,
+          "duration_ms": 230
+        },
+        {
+          "text": "算",
+          "start_ms": 197080,
+          "duration_ms": 610
+        },
+        {
+          "text": "爱",
+          "start_ms": 197690,
+          "duration_ms": 50
+        },
+        {
+          "text": "你",
+          "start_ms": 197740,
+          "duration_ms": 310
+        },
+        {
+          "text": "爱",
+          "start_ms": 198050,
+          "duration_ms": 330
+        },
+        {
+          "text": "你",
+          "start_ms": 198380,
+          "duration_ms": 280
+        },
+        {
+          "text": "爱",
+          "start_ms": 198660,
+          "duration_ms": 1020
+        },
+        {
+          "text": "你",
+          "start_ms": 199680,
+          "duration_ms": 120
+        },
+        {
+          "text": "爱",
+          "start_ms": 199800,
+          "duration_ms": 30
+        },
+        {
+          "text": "你",
+          "start_ms": 199830,
+          "duration_ms": 60
+        }
+      ]
+    },
+    {
+      "start_ms": 199890,
+      "duration_ms": 4450,
+      "text": "不值得为你伤心 伤心",
+      "words": [
+        {
+          "text": "不",
+          "start_ms": 199890,
+          "duration_ms": 350
+        },
+        {
+          "text": "值",
+          "start_ms": 200240,
+          "duration_ms": 440
+        },
+        {
+          "text": "得",
+          "start_ms": 200680,
+          "duration_ms": 470
+        },
+        {
+          "text": "为",
+          "start_ms": 201150,
+          "duration_ms": 240
+        },
+        {
+          "text": "你",
+          "start_ms": 201390,
+          "duration_ms": 280
+        },
+        {
+          "text": "伤",
+          "start_ms": 201670,
+          "duration_ms": 440
+        },
+        {
+          "text": "心 ",
+          "start_ms": 202110,
+          "duration_ms": 980
+        },
+        {
+          "text": "伤",
+          "start_ms": 203090,
+          "duration_ms": 940
+        },
+        {
+          "text": "心",
+          "start_ms": 204030,
+          "duration_ms": 310
+        }
+      ]
+    },
+    {
+      "start_ms": 210860,
+      "duration_ms": 3330,
+      "text": "Your confession remains to be my final pleading",
+      "words": [
+        {
+          "text": "Your ",
+          "start_ms": 210860,
+          "duration_ms": 260
+        },
+        {
+          "text": "confession ",
+          "start_ms": 211120,
+          "duration_ms": 870
+        },
+        {
+          "text": "remains ",
+          "start_ms": 211990,
+          "duration_ms": 680
+        },
+        {
+          "text": "to ",
+          "start_ms": 212670,
+          "duration_ms": 150
+        },
+        {
+          "text": "be ",
+          "start_ms": 212820,
+          "duration_ms": 120
+        },
+        {
+          "text": "my ",
+          "start_ms": 212940,
+          "duration_ms": 190
+        },
+        {
+          "text": "final ",
+          "start_ms": 213130,
+          "duration_ms": 520
+        },
+        {
+          "text": "pleading",
+          "start_ms": 213650,
+          "duration_ms": 540
+        }
+      ]
+    },
+    {
+      "start_ms": 215120,
+      "duration_ms": 2190,
+      "text": "But the only thing that’s here with me",
+      "words": [
+        {
+          "text": "But ",
+          "start_ms": 215120,
+          "duration_ms": 200
+        },
+        {
+          "text": "the ",
+          "start_ms": 215320,
+          "duration_ms": 190
+        },
+        {
+          "text": "only ",
+          "start_ms": 215510,
+          "duration_ms": 260
+        },
+        {
+          "text": "thing ",
+          "start_ms": 215770,
+          "duration_ms": 270
+        },
+        {
+          "text": "that",
+          "start_ms": 216040,
+          "duration_ms": 120
+        },
+        {
+          "text": "’",
+          "start_ms": 216160,
+          "duration_ms": 30
+        },
+        {
+          "text": "s ",
+          "start_ms": 216190,
+          "duration_ms": 140
+        },
+        {
+          "text": "here ",
+          "start_ms": 216330,
+          "duration_ms": 230
+        },
+        {
+          "text": "with ",
+          "start_ms": 216560,
+          "duration_ms": 250
+        },
+        {
+          "text": "me",
+          "start_ms": 216810,
+          "duration_ms": 500
+        }
+      ]
+    },
+    {
+      "start_ms": 217700,
+      "duration_ms": 3590,
+      "text": "is tic tac tic tac tic tac tic tac",
+      "words": [
+        {
+          "text": "is ",
+          "start_ms": 217700,
+          "duration_ms": 180
+        },
+        {
+          "text": "tic ",
+          "start_ms": 217880,
+          "duration_ms": 180
+        },
+        {
+          "text": "tac ",
+          "start_ms": 218060,
+          "duration_ms": 670
+        },
+        {
+          "text": "tic ",
+          "start_ms": 218730,
+          "duration_ms": 430
+        },
+        {
+          "text": "tac ",
+          "start_ms": 219160,
+          "duration_ms": 430
+        },
+        {
+          "text": "tic ",
+          "start_ms": 219590,
+          "duration_ms": 430
+        },
+        {
+          "text": "tac ",
+          "start_ms": 220020,
+          "duration_ms": 420
+        },
+        {
+          "text": "tic ",
+          "start_ms": 220440,
+          "duration_ms": 430
+        },
+        {
+          "text": "tac",
+          "start_ms": 220870,
+          "duration_ms": 420
+        }
+      ]
+    }
+  ]
+}

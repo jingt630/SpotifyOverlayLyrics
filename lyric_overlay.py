@@ -20,6 +20,7 @@ from PyQt6.QtGui import (
     QDesktopServices,
     QFont,
     QFontMetrics,
+    QImage,
     QLinearGradient,
     QPainter,
     QPainterPath,
@@ -56,7 +57,18 @@ _TEXT = {
         "dark": "Dark",
         "light": "Light",
         "pick": "Pick a synced lyric",
+        "netease_pick": "Pick a NetEase lyric",
         "use": "Use this",
+        "netease_search": "Checking NetEase…",
+        "netease_wait": "Waiting to check NetEase.",
+        "netease_saved": "NetEase word times saved.",
+        "netease_none": "No NetEase word sync.",
+        "netease_error": "NetEase did not respond.",
+        "netease_refused": "NetEase refused this lyric.",
+        "netease_nolyric": "NetEase says this song has no lyrics.",
+        "netease_uncollected": "NetEase has not collected lyrics for this song.",
+        "netease_line_only": "NetEase returned line lyrics only, no word sync.",
+        "netease_unparsed": "NetEase sent word lyrics we could not read.",
         "idle": "Nothing is playing right now.",
         "need_player": "Nothing is playing right now.",
         "none": "No synced lyrics for this track.",
@@ -77,7 +89,18 @@ _TEXT = {
         "dark": "深色",
         "light": "浅色",
         "pick": "选择同步歌词",
+        "netease_pick": "选择网易云歌词",
         "use": "使用",
+        "netease_search": "正在查询网易云…",
+        "netease_wait": "稍后再查询网易云。",
+        "netease_saved": "网易云逐字时间已保存。",
+        "netease_none": "网易云没有逐字歌词。",
+        "netease_error": "网易云没有响应。",
+        "netease_refused": "网易云拒绝了这首歌词。",
+        "netease_nolyric": "网易云表示这首歌没有歌词。",
+        "netease_uncollected": "网易云还没有收录这首歌的歌词。",
+        "netease_line_only": "网易云只有逐行歌词，没有逐字歌词。",
+        "netease_unparsed": "网易云返回了无法读取的逐字歌词。",
         "idle": "现在没有在播放。",
         "need_player": "现在没有在播放。",
         "none": "这首歌没有同步歌词。",
@@ -181,9 +204,13 @@ class LyricOverlay(QWidget):
         self.right = right
         self._highlight = highlight
         self._status_key = ""
+        self._status_detail = ""
         self._notice_key = ""
         self._mode = "lyrics"
+        self._words: tuple[tuple[str, float], ...] = ()
+        self._word_next = ""
         self._choice_rows: list[LyricCandidate] = []
+        self._choice_title = "pick"
         self._on_pick = None
         self._on_previous = None
         self._on_toggle = None
@@ -220,6 +247,14 @@ class LyricOverlay(QWidget):
         """Return one interface string in the selected language."""
         return _TEXT[self._language].get(key, _TEXT["en"].get(key, key))
 
+    def _status_sentence(self) -> str:
+        """Return the status line, including a NetEase detail when one exists."""
+        sentence = self.text(self._status_key or "loading")
+        detail = self._status_detail.strip()
+        if not detail:
+            return sentence
+        return f"{sentence} {detail}"
+
     def set_transport(self, on_previous, on_toggle, on_next) -> None:
         """Store the callbacks for previous, pause or resume, and next."""
         self._on_previous = on_previous
@@ -239,10 +274,17 @@ class LyricOverlay(QWidget):
         self._notice_timer.start(4000)
         self._relayout("top")
 
-    def set_status(self, key: str) -> None:
-        """Replace the lyrics with one translated status line."""
+    def set_status(self, key: str, detail: str = "") -> None:
+        """Replace the lyrics with one translated status line.
+
+        Parameters:
+            key (str): A key in the overlay text table.
+            detail (str): Extra words from a NetEase response, shown after
+                the translated line. Empty hides that extra part.
+        """
         self._mode = "status"
         self._status_key = key
+        self._status_detail = detail
         self._choice_rows = []
         self._on_pick = None
         self.left = ""
@@ -279,7 +321,56 @@ class LyricOverlay(QWidget):
         self._highlight = highlight
         self._relayout("top")
 
-    def set_choices(self, candidates: list[LyricCandidate], on_pick) -> None:
+    def set_words(self, words: tuple[tuple[str, float], ...] | list[tuple[str, float]], following: str, side: str) -> None:
+        """Show a NetEase line and fill each word from the left as it is sung.
+
+        Purpose:
+            Each token carries how much of its duration has elapsed, from 0
+            to 1. A fill that changes inside the same line repaints without
+            moving the window.
+
+        Parameters:
+            words: Tokens of the current line as (text, fill).
+            following (str): The next line, drawn without a word highlight.
+            side (str): "left" or "right", the slot that holds the current line.
+
+        Returns:
+            None.
+
+        Precondition:
+            words is not empty. Each fill is between 0 and 1.
+
+        Postcondition:
+            The window size matches the new line. A fill-only change does
+            not move the window.
+        """
+        packed = tuple((text, float(fill)) for text, fill in words)
+        same_line = (
+            self._mode == "words"
+            and self._highlight == side
+            and self._word_next == following
+            and tuple(text for text, _fill in self._words) == tuple(text for text, _fill in packed)
+        )
+        self._mode = "words"
+        self._words = packed
+        self._word_next = following
+        self._highlight = side
+        self._status_key = ""
+        self._choice_rows = []
+        self._on_pick = None
+        current = "".join(text for text, _fill in self._words)
+        if side == "right":
+            self.left = following
+            self.right = current
+        else:
+            self.left = current
+            self.right = following
+        if same_line:
+            self.update()
+            return
+        self._relayout("top")
+
+    def set_choices(self, candidates: list[LyricCandidate], on_pick, title_key: str = "pick") -> None:
         """Show preview links and a Use this button for each candidate.
 
         Purpose:
@@ -288,7 +379,8 @@ class LyricOverlay(QWidget):
 
         Parameters:
             candidates (list[LyricCandidate]): Up to five synced records.
-            on_pick: Called with the LRCLIB id when Use this is clicked.
+            on_pick: Called with the record id when Use this is clicked.
+            title_key (str): Overlay text key for the list heading.
 
         Returns:
             None.
@@ -301,6 +393,7 @@ class LyricOverlay(QWidget):
         """
         self._mode = "choices"
         self._choice_rows = list(candidates)
+        self._choice_title = title_key
         self._on_pick = on_pick
         self.left = ""
         self.right = ""
@@ -514,14 +607,34 @@ class LyricOverlay(QWidget):
         return int(self._screen_area().height() * _HEIGHT_RATIO)
 
     def _relayout(self, anchor: str) -> None:
-        """Resize around the current top or bottom edge."""
+        """Resize around the current top or bottom edge.
+
+        Purpose:
+            Keep the window where the user left it. A word highlight does
+            not change the size, so the window is not moved again.
+
+        Parameters:
+            anchor (str): "top" keeps the top edge. Anything else keeps the
+                bottom edge.
+
+        Returns:
+            None.
+
+        Precondition:
+            The widget has been constructed.
+
+        Postcondition:
+            An unchanged size leaves the window position unchanged.
+        """
         old = self.geometry()
-        center_x = old.center().x()
-        bottom = old.bottom()
         self._apply_size()
-        x = center_x - self.width() // 2
-        y = old.y() if anchor == "top" else bottom - self.height() + 1
-        self.move(x, y)
+        x = old.x() + (old.width() - self.width()) // 2
+        if anchor == "top":
+            y = old.y()
+        else:
+            y = old.y() + old.height() - self.height()
+        if x != old.x() or y != old.y():
+            self.move(x, y)
         self.update()
 
     def _apply_size(self) -> None:
@@ -562,8 +675,10 @@ class LyricOverlay(QWidget):
         metrics = QFontMetrics(self._lyric_font())
         line_h = metrics.height()
         if self._mode == "status":
-            rows = self._visual_lines(self.text(self._status_key or "loading"), self._lyric_column_width())
+            rows = self._visual_lines(self._status_sentence(), self._lyric_column_width())
             return self._fixed_width(), max(1, len(rows)) * line_h
+        if self._mode == "words":
+            return self._fixed_width(), self._word_block_height(metrics, line_h)
         if self._mode == "choices":
             return self._choice_size(metrics, line_h)
         width = self._lyric_column_width()
@@ -579,7 +694,7 @@ class LyricOverlay(QWidget):
     def _choice_size(self, metrics: QFontMetrics, line_h: int) -> tuple[float, float]:
         """Return the candidate list's text size."""
         button_w = metrics.horizontalAdvance(self.text("use")) + 22
-        widths = [metrics.horizontalAdvance(self.text("pick"))]
+        widths = [metrics.horizontalAdvance(self.text(self._choice_title))]
         for row in self._choice_rows:
             widths.append(min(metrics.horizontalAdvance(row.label), 560))
             widths.append(metrics.horizontalAdvance(row.url) + 12 + button_w)
@@ -656,8 +771,79 @@ class LyricOverlay(QWidget):
         painter.setPen(self._ink())
         painter.drawText(rect, flags, glyph)
 
+    def _pack_words(
+        self,
+        words: tuple[tuple[str, float], ...],
+        width: int,
+        metrics: QFontMetrics,
+    ) -> list[list[tuple[str, float, int]]]:
+        """Break a word line into rows that fit width."""
+        rows: list[list[tuple[str, float, int]]] = []
+        row: list[tuple[str, float, int]] = []
+        used = 0
+        for text, fill in words:
+            advance = metrics.horizontalAdvance(text)
+            if row and used + advance > width:
+                rows.append(row)
+                row = []
+                used = 0
+            row.append((text, fill, advance))
+            used += advance
+        if row:
+            rows.append(row)
+        return rows or [[("", 0.0, 0)]]
+
+    def _word_block_height(self, metrics: QFontMetrics, line_h: int) -> float:
+        """Return the height of the current word line plus the following line."""
+        content_w = max(1, self._fixed_width() - _PAD_X * 2)
+        if self._line_mode == "one":
+            rows = self._pack_words(self._words, content_w, metrics)
+            return max(1, len(rows)) * line_h
+        col_w = max(1, content_w - self._pair_inset())
+        word_rows = self._pack_words(self._words, col_w, metrics)
+        other = self._word_next
+        other_n = max(1, len(self._visual_lines(other, col_w))) if other else 0
+        gap = 14 if word_rows and other_n else 0
+        return len(word_rows) * line_h + gap + other_n * line_h
+
+    def _draw_word_rows(
+        self,
+        painter: QPainter,
+        x: float,
+        y: float,
+        width: float,
+        line_h: int,
+        words: tuple[tuple[str, float], ...],
+        align: str,
+    ) -> None:
+        """Draw one lyric line, filling each word from the left by its elapsed duration."""
+        metrics = painter.fontMetrics()
+        rows = self._pack_words(words, int(width), metrics)
+        for row in rows:
+            row_w = sum(item[2] for item in row)
+            if align == "right":
+                cursor = x + width - row_w
+            elif align == "center":
+                cursor = x + max(0, (width - row_w) / 2)
+            else:
+                cursor = x
+            for text, fill, advance in row:
+                self._draw_marked(
+                    painter,
+                    QRectF(cursor, y, max(1, advance), line_h),
+                    text,
+                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                    current=False,
+                    fill=fill,
+                )
+                cursor += advance
+            y += line_h
+
     def _draw_lyrics(self, painter: QPainter, body: QRectF) -> None:
         """Draw one centered line, or the left and right pair."""
+        if self._mode == "words":
+            self._draw_word_lyrics(painter, body)
+            return
         font = self._lyric_font()
         painter.setFont(font)
         metrics = QFontMetrics(font)
@@ -711,6 +897,63 @@ class LyricOverlay(QWidget):
         )
         painter.restore()
 
+    def _draw_word_lyrics(self, painter: QPainter, body: QRectF) -> None:
+        """Draw the NetEase line with one highlighted word, plus the next line."""
+        font = self._lyric_font()
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        content = body.adjusted(_PAD_X, _PAD_Y, -_PAD_X, -_PAD_Y)
+        line_h = metrics.height()
+        painter.save()
+        painter.setClipRect(body)
+        if self._line_mode == "one":
+            rows = self._pack_words(self._words, int(content.width()), metrics)
+            block_h = max(1, len(rows)) * line_h
+            top = content.y() + max(0, (content.height() - block_h) / 2)
+            self._draw_word_rows(painter, content.x(), top, content.width(), line_h, self._words, "center")
+            painter.restore()
+            return
+        inset = self._pair_inset()
+        col_w = max(1.0, content.width() - inset)
+        word_rows = self._pack_words(self._words, int(col_w), metrics)
+        other_rows = self._visual_lines(self._word_next, int(col_w)) if self._word_next else []
+        gap = 14 if word_rows and other_rows else 0
+        block_h = len(word_rows) * line_h + gap + len(other_rows) * line_h
+        top = content.y() + max(0, (content.height() - block_h) / 2)
+        if self._highlight == "right":
+            self._draw_wrapped(
+                painter,
+                content.x(),
+                top,
+                col_w,
+                line_h,
+                other_rows,
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                current=False,
+            )
+            self._draw_word_rows(
+                painter,
+                content.x() + inset,
+                top + len(other_rows) * line_h + gap,
+                col_w,
+                line_h,
+                self._words,
+                "right",
+            )
+        else:
+            self._draw_word_rows(painter, content.x(), top, col_w, line_h, self._words, "left")
+            self._draw_wrapped(
+                painter,
+                content.x() + inset,
+                top + len(word_rows) * line_h + gap,
+                col_w,
+                line_h,
+                other_rows,
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                current=False,
+            )
+        painter.restore()
+
     def _draw_wrapped(
         self,
         painter: QPainter,
@@ -738,7 +981,7 @@ class LyricOverlay(QWidget):
         painter.setFont(font)
         content = body.adjusted(_PAD_X, _PAD_Y, -_PAD_X, -_PAD_Y)
         line_h = QFontMetrics(font).height()
-        rows = self._visual_lines(self.text(self._status_key or "loading"), int(content.width()))
+        rows = self._visual_lines(self._status_sentence(), int(content.width()))
         block_h = max(1, len(rows)) * line_h
         top = content.y() + max(0, (content.height() - block_h) / 2)
         self._draw_wrapped(
@@ -752,8 +995,40 @@ class LyricOverlay(QWidget):
             current=False,
         )
 
-    def _draw_marked(self, painter: QPainter, rect: QRectF, text: str, flags: Qt.AlignmentFlag, current: bool) -> None:
-        """Draw lyric text with a black outline. The sung line is yellow to orange."""
+    def _draw_marked(
+        self,
+        painter: QPainter,
+        rect: QRectF,
+        text: str,
+        flags: Qt.AlignmentFlag,
+        current: bool,
+        fill: float | None = None,
+    ) -> None:
+        """Draw lyric text with a black outline. Sung color wipes from the left.
+
+        Purpose:
+            A full sung line uses the yellow-to-orange gradient. A NetEase
+            word uses fill, from 0 to 1, so the left portion is the left
+            crop of that gradient and the right portion stays white.
+
+        Parameters:
+            painter (QPainter): Active painter.
+            rect (QRectF): Slot that contains the text.
+            text (str): Characters to draw.
+            flags (Qt.AlignmentFlag): Horizontal alignment inside rect.
+            current (bool): True paints the whole string in the sung gradient.
+            fill (float | None): Portion of the glyphs to cover, from the
+                left. None follows current.
+
+        Returns:
+            None.
+
+        Precondition:
+            fill is None or between 0 and 1.
+
+        Postcondition:
+            The painter's clip is unchanged.
+        """
         if not text:
             return
         metrics = painter.fontMetrics()
@@ -771,15 +1046,77 @@ class LyricOverlay(QWidget):
         outline.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         outline.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.strokePath(path, outline)
-        if current:
-            bounds = path.boundingRect()
-            gradient = QLinearGradient(bounds.topLeft(), bounds.bottomLeft())
-            gradient.setColorAt(0.0, QColor(255, 244, 140))
-            gradient.setColorAt(0.45, QColor(255, 176, 32))
-            gradient.setColorAt(1.0, QColor(255, 98, 16))
-            painter.fillPath(path, gradient)
-        else:
+        amount = 1.0 if current else 0.0
+        if fill is not None:
+            amount = max(0.0, min(1.0, fill))
+        if amount < 1.0:
             painter.fillPath(path, QColor(255, 255, 255))
+        if amount <= 0.0:
+            return
+        bounds = path.boundingRect()
+        if amount >= 1.0 or bounds.width() <= 0:
+            painter.fillPath(path, self._sung_gradient(bounds))
+            return
+        self._paint_partial_fill(painter, path, bounds, amount)
+
+    def _sung_gradient(self, bounds: QRectF) -> QLinearGradient:
+        """Return the yellow-to-orange fill for one glyph's full height."""
+        gradient = QLinearGradient(bounds.topLeft(), bounds.bottomLeft())
+        gradient.setColorAt(0.0, QColor(255, 244, 140))
+        gradient.setColorAt(0.35, QColor(255, 196, 64))
+        gradient.setColorAt(0.7, QColor(255, 140, 24))
+        gradient.setColorAt(1.0, QColor(255, 98, 16))
+        return gradient
+
+    def _paint_partial_fill(self, painter: QPainter, path: QPainterPath, bounds: QRectF, amount: float) -> None:
+        """Paint the left portion of the sung word, fading into the white side.
+
+        Purpose:
+            Build the fully highlighted glyphs, then hide the right side with
+            a short horizontal fade. The edge moves with amount instead of
+            cutting the letter on a hard line.
+
+        Parameters:
+            painter (QPainter): Window painter. The white word is already drawn.
+            path (QPainterPath): Glyph outlines in window coordinates.
+            bounds (QRectF): Tight bounds of those glyphs.
+            amount (float): Portion to reveal, from 0 to 1.
+
+        Returns:
+            None.
+
+        Precondition:
+            0 < amount < 1 and bounds has a positive width.
+
+        Postcondition:
+            The window painter's clip and transform are unchanged.
+        """
+        pad = 4.0
+        ratio = painter.device().devicePixelRatioF() if painter.device() is not None else 1.0
+        ratio = max(1.0, ratio)
+        logical = QRectF(0, 0, bounds.width() + pad * 2, bounds.height() + pad * 2)
+        image = QImage(
+            max(1, int(logical.width() * ratio)),
+            max(1, int(logical.height() * ratio)),
+            QImage.Format.Format_ARGB32_Premultiplied,
+        )
+        image.setDevicePixelRatio(ratio)
+        image.fill(0)
+        part = QPainter(image)
+        part.setRenderHint(QPainter.RenderHint.Antialiasing)
+        part.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        shifted = path.translated(-bounds.left() + pad, -bounds.top() + pad)
+        glyph_bounds = QRectF(pad, pad, bounds.width(), bounds.height())
+        part.fillPath(shifted, self._sung_gradient(glyph_bounds))
+        feather = min(12.0, max(4.0, bounds.width() * 0.18))
+        cut = pad + bounds.width() * amount
+        fade = QLinearGradient(cut - feather, 0, cut, 0)
+        fade.setColorAt(0.0, QColor(0, 0, 0, 255))
+        fade.setColorAt(1.0, QColor(0, 0, 0, 0))
+        part.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+        part.fillRect(logical, fade)
+        part.end()
+        painter.drawImage(QPointF(bounds.left() - pad, bounds.top() - pad), image)
 
     def _draw_choices(self, painter: QPainter, bounds: QRectF) -> None:
         """Draw each candidate on the left, with a link and a Use this button."""
@@ -795,7 +1132,7 @@ class LyricOverlay(QWidget):
         self._draw_marked(
             painter,
             QRectF(content.x(), y, content.width(), line_h),
-            self.text("pick"),
+            self.text(self._choice_title),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             current=False,
         )

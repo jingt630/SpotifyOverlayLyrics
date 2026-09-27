@@ -1,0 +1,2566 @@
+{
+  "track_name": "Thriller",
+  "artist_name": "Michael Jackson",
+  "album_name": "Thriller",
+  "duration_ms": 358807,
+  "netease_id": 21178260,
+  "netease_name": "Thriller",
+  "netease_artist": "Michael Jackson",
+  "netease_album": "Thriller",
+  "netease_duration_ms": 357753,
+  "lines": [
+    {
+      "start_ms": 59190,
+      "duration_ms": 5550,
+      "text": "It's close to midnight and something evil's lurking in the dark",
+      "words": [
+        {
+          "text": "It's ",
+          "start_ms": 59190,
+          "duration_ms": 240
+        },
+        {
+          "text": "close ",
+          "start_ms": 59430,
+          "duration_ms": 330
+        },
+        {
+          "text": "to ",
+          "start_ms": 59760,
+          "duration_ms": 90
+        },
+        {
+          "text": "midnight ",
+          "start_ms": 59850,
+          "duration_ms": 2040
+        },
+        {
+          "text": "and ",
+          "start_ms": 61890,
+          "duration_ms": 120
+        },
+        {
+          "text": "something ",
+          "start_ms": 62010,
+          "duration_ms": 540
+        },
+        {
+          "text": "evil's ",
+          "start_ms": 62550,
+          "duration_ms": 390
+        },
+        {
+          "text": "lurking ",
+          "start_ms": 62940,
+          "duration_ms": 630
+        },
+        {
+          "text": "in ",
+          "start_ms": 63570,
+          "duration_ms": 210
+        },
+        {
+          "text": "the ",
+          "start_ms": 63780,
+          "duration_ms": 120
+        },
+        {
+          "text": "dark",
+          "start_ms": 63900,
+          "duration_ms": 840
+        }
+      ]
+    },
+    {
+      "start_ms": 67350,
+      "duration_ms": 5520,
+      "text": "Under the moonlight you see a sight that almost stops your heart",
+      "words": [
+        {
+          "text": "Under ",
+          "start_ms": 67350,
+          "duration_ms": 480
+        },
+        {
+          "text": "the ",
+          "start_ms": 67830,
+          "duration_ms": 120
+        },
+        {
+          "text": "moonlight ",
+          "start_ms": 67950,
+          "duration_ms": 2010
+        },
+        {
+          "text": "you ",
+          "start_ms": 69960,
+          "duration_ms": 150
+        },
+        {
+          "text": "see ",
+          "start_ms": 70110,
+          "duration_ms": 360
+        },
+        {
+          "text": "a ",
+          "start_ms": 70470,
+          "duration_ms": 120
+        },
+        {
+          "text": "sight ",
+          "start_ms": 70590,
+          "duration_ms": 300
+        },
+        {
+          "text": "that ",
+          "start_ms": 70890,
+          "duration_ms": 210
+        },
+        {
+          "text": "almost ",
+          "start_ms": 71100,
+          "duration_ms": 570
+        },
+        {
+          "text": "stops ",
+          "start_ms": 71670,
+          "duration_ms": 300
+        },
+        {
+          "text": "your ",
+          "start_ms": 71970,
+          "duration_ms": 90
+        },
+        {
+          "text": "heart",
+          "start_ms": 72060,
+          "duration_ms": 810
+        }
+      ]
+    },
+    {
+      "start_ms": 73350,
+      "duration_ms": 6780,
+      "text": "You try to scream but terror takes the sound before you make it",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 73350,
+          "duration_ms": 270
+        },
+        {
+          "text": "try ",
+          "start_ms": 73620,
+          "duration_ms": 300
+        },
+        {
+          "text": "to ",
+          "start_ms": 73920,
+          "duration_ms": 120
+        },
+        {
+          "text": "scream ",
+          "start_ms": 74040,
+          "duration_ms": 1770
+        },
+        {
+          "text": "but ",
+          "start_ms": 75810,
+          "duration_ms": 390
+        },
+        {
+          "text": "terror ",
+          "start_ms": 76200,
+          "duration_ms": 360
+        },
+        {
+          "text": "takes ",
+          "start_ms": 76560,
+          "duration_ms": 330
+        },
+        {
+          "text": "the ",
+          "start_ms": 76890,
+          "duration_ms": 120
+        },
+        {
+          "text": "sound ",
+          "start_ms": 77010,
+          "duration_ms": 360
+        },
+        {
+          "text": "before ",
+          "start_ms": 77370,
+          "duration_ms": 480
+        },
+        {
+          "text": "you ",
+          "start_ms": 77850,
+          "duration_ms": 210
+        },
+        {
+          "text": "make ",
+          "start_ms": 78060,
+          "duration_ms": 420
+        },
+        {
+          "text": "it",
+          "start_ms": 78480,
+          "duration_ms": 1650
+        }
+      ]
+    },
+    {
+      "start_ms": 81510,
+      "duration_ms": 5550,
+      "text": "You start to freeze as horror looks you right between the eyes",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 81510,
+          "duration_ms": 210
+        },
+        {
+          "text": "start ",
+          "start_ms": 81720,
+          "duration_ms": 360
+        },
+        {
+          "text": "to ",
+          "start_ms": 82080,
+          "duration_ms": 90
+        },
+        {
+          "text": "freeze ",
+          "start_ms": 82170,
+          "duration_ms": 1830
+        },
+        {
+          "text": "as ",
+          "start_ms": 84000,
+          "duration_ms": 360
+        },
+        {
+          "text": "horror ",
+          "start_ms": 84360,
+          "duration_ms": 300
+        },
+        {
+          "text": "looks ",
+          "start_ms": 84660,
+          "duration_ms": 360
+        },
+        {
+          "text": "you ",
+          "start_ms": 85020,
+          "duration_ms": 180
+        },
+        {
+          "text": "right ",
+          "start_ms": 85200,
+          "duration_ms": 270
+        },
+        {
+          "text": "between ",
+          "start_ms": 85470,
+          "duration_ms": 480
+        },
+        {
+          "text": "the ",
+          "start_ms": 85950,
+          "duration_ms": 150
+        },
+        {
+          "text": "eyes",
+          "start_ms": 86100,
+          "duration_ms": 960
+        }
+      ]
+    },
+    {
+      "start_ms": 87240,
+      "duration_ms": 1860,
+      "text": "You're paralyzed",
+      "words": [
+        {
+          "text": "You're ",
+          "start_ms": 87240,
+          "duration_ms": 360
+        },
+        {
+          "text": "paralyzed",
+          "start_ms": 87600,
+          "duration_ms": 1500
+        }
+      ]
+    },
+    {
+      "start_ms": 89640,
+      "duration_ms": 4560,
+      "text": "'Cause this is thriller thriller night",
+      "words": [
+        {
+          "text": "'Cause ",
+          "start_ms": 89640,
+          "duration_ms": 300
+        },
+        {
+          "text": "this ",
+          "start_ms": 89940,
+          "duration_ms": 300
+        },
+        {
+          "text": "is ",
+          "start_ms": 90240,
+          "duration_ms": 180
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 90420,
+          "duration_ms": 2400
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 92820,
+          "duration_ms": 600
+        },
+        {
+          "text": "night",
+          "start_ms": 93420,
+          "duration_ms": 780
+        }
+      ]
+    },
+    {
+      "start_ms": 94290,
+      "duration_ms": 3420,
+      "text": "And no one's gonna save you from the beast about to strike",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 94290,
+          "duration_ms": 210
+        },
+        {
+          "text": "no ",
+          "start_ms": 94500,
+          "duration_ms": 270
+        },
+        {
+          "text": "one's ",
+          "start_ms": 94770,
+          "duration_ms": 240
+        },
+        {
+          "text": "gonna ",
+          "start_ms": 95010,
+          "duration_ms": 330
+        },
+        {
+          "text": "save ",
+          "start_ms": 95340,
+          "duration_ms": 450
+        },
+        {
+          "text": "you ",
+          "start_ms": 95790,
+          "duration_ms": 120
+        },
+        {
+          "text": "from ",
+          "start_ms": 95910,
+          "duration_ms": 360
+        },
+        {
+          "text": "the ",
+          "start_ms": 96270,
+          "duration_ms": 90
+        },
+        {
+          "text": "beast ",
+          "start_ms": 96360,
+          "duration_ms": 510
+        },
+        {
+          "text": "about ",
+          "start_ms": 96870,
+          "duration_ms": 420
+        },
+        {
+          "text": "to ",
+          "start_ms": 97290,
+          "duration_ms": 60
+        },
+        {
+          "text": "strike",
+          "start_ms": 97350,
+          "duration_ms": 360
+        }
+      ]
+    },
+    {
+      "start_ms": 97740,
+      "duration_ms": 4560,
+      "text": "You know it's thriller thriller night",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 97740,
+          "duration_ms": 240
+        },
+        {
+          "text": "know ",
+          "start_ms": 97980,
+          "duration_ms": 360
+        },
+        {
+          "text": "it's ",
+          "start_ms": 98340,
+          "duration_ms": 180
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 98520,
+          "duration_ms": 1950
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 100470,
+          "duration_ms": 1080
+        },
+        {
+          "text": "night",
+          "start_ms": 101550,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 102330,
+      "duration_ms": 6870,
+      "text": "You're fighting for your life inside a killer thriller tonight",
+      "words": [
+        {
+          "text": "You're ",
+          "start_ms": 102330,
+          "duration_ms": 240
+        },
+        {
+          "text": "fighting ",
+          "start_ms": 102570,
+          "duration_ms": 510
+        },
+        {
+          "text": "for ",
+          "start_ms": 103080,
+          "duration_ms": 300
+        },
+        {
+          "text": "your ",
+          "start_ms": 103380,
+          "duration_ms": 150
+        },
+        {
+          "text": "life ",
+          "start_ms": 103530,
+          "duration_ms": 420
+        },
+        {
+          "text": "inside ",
+          "start_ms": 103950,
+          "duration_ms": 540
+        },
+        {
+          "text": "a ",
+          "start_ms": 104490,
+          "duration_ms": 330
+        },
+        {
+          "text": "killer ",
+          "start_ms": 104820,
+          "duration_ms": 750
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 105570,
+          "duration_ms": 780
+        },
+        {
+          "text": "tonight",
+          "start_ms": 106350,
+          "duration_ms": 2850
+        }
+      ]
+    },
+    {
+      "start_ms": 115920,
+      "duration_ms": 6270,
+      "text": "You hear the door slam and realize there's nowhere left to run",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 115920,
+          "duration_ms": 330
+        },
+        {
+          "text": "hear ",
+          "start_ms": 116250,
+          "duration_ms": 300
+        },
+        {
+          "text": "the ",
+          "start_ms": 116550,
+          "duration_ms": 120
+        },
+        {
+          "text": "door ",
+          "start_ms": 116670,
+          "duration_ms": 900
+        },
+        {
+          "text": "slam ",
+          "start_ms": 117570,
+          "duration_ms": 1110
+        },
+        {
+          "text": "and ",
+          "start_ms": 118680,
+          "duration_ms": 180
+        },
+        {
+          "text": "realize ",
+          "start_ms": 118860,
+          "duration_ms": 750
+        },
+        {
+          "text": "there's ",
+          "start_ms": 119610,
+          "duration_ms": 210
+        },
+        {
+          "text": "nowhere ",
+          "start_ms": 119820,
+          "duration_ms": 450
+        },
+        {
+          "text": "left ",
+          "start_ms": 120270,
+          "duration_ms": 330
+        },
+        {
+          "text": "to ",
+          "start_ms": 120600,
+          "duration_ms": 150
+        },
+        {
+          "text": "run",
+          "start_ms": 120750,
+          "duration_ms": 1440
+        }
+      ]
+    },
+    {
+      "start_ms": 123990,
+      "duration_ms": 6060,
+      "text": "You feel the cold hand and wonder if you'll ever see the sun",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 123990,
+          "duration_ms": 390
+        },
+        {
+          "text": "feel ",
+          "start_ms": 124380,
+          "duration_ms": 270
+        },
+        {
+          "text": "the ",
+          "start_ms": 124650,
+          "duration_ms": 120
+        },
+        {
+          "text": "cold ",
+          "start_ms": 124770,
+          "duration_ms": 1080
+        },
+        {
+          "text": "hand ",
+          "start_ms": 125850,
+          "duration_ms": 1020
+        },
+        {
+          "text": "and ",
+          "start_ms": 126870,
+          "duration_ms": 90
+        },
+        {
+          "text": "wonder ",
+          "start_ms": 126960,
+          "duration_ms": 510
+        },
+        {
+          "text": "if ",
+          "start_ms": 127470,
+          "duration_ms": 240
+        },
+        {
+          "text": "you'll ",
+          "start_ms": 127710,
+          "duration_ms": 240
+        },
+        {
+          "text": "ever ",
+          "start_ms": 127950,
+          "duration_ms": 360
+        },
+        {
+          "text": "see ",
+          "start_ms": 128310,
+          "duration_ms": 390
+        },
+        {
+          "text": "the ",
+          "start_ms": 128700,
+          "duration_ms": 120
+        },
+        {
+          "text": "sun",
+          "start_ms": 128820,
+          "duration_ms": 1230
+        }
+      ]
+    },
+    {
+      "start_ms": 130200,
+      "duration_ms": 6720,
+      "text": "You close your eyes and hope that this is just imagination",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 130200,
+          "duration_ms": 240
+        },
+        {
+          "text": "close ",
+          "start_ms": 130440,
+          "duration_ms": 330
+        },
+        {
+          "text": "your ",
+          "start_ms": 130770,
+          "duration_ms": 210
+        },
+        {
+          "text": "eyes ",
+          "start_ms": 130980,
+          "duration_ms": 1710
+        },
+        {
+          "text": "and ",
+          "start_ms": 132690,
+          "duration_ms": 270
+        },
+        {
+          "text": "hope ",
+          "start_ms": 132960,
+          "duration_ms": 330
+        },
+        {
+          "text": "that ",
+          "start_ms": 133290,
+          "duration_ms": 270
+        },
+        {
+          "text": "this ",
+          "start_ms": 133560,
+          "duration_ms": 270
+        },
+        {
+          "text": "is ",
+          "start_ms": 133830,
+          "duration_ms": 150
+        },
+        {
+          "text": "just ",
+          "start_ms": 133980,
+          "duration_ms": 390
+        },
+        {
+          "text": "imagination",
+          "start_ms": 134370,
+          "duration_ms": 2550
+        }
+      ]
+    },
+    {
+      "start_ms": 138270,
+      "duration_ms": 5580,
+      "text": "But all the while you hear the creature creepin' up behind",
+      "words": [
+        {
+          "text": "But ",
+          "start_ms": 138270,
+          "duration_ms": 390
+        },
+        {
+          "text": "all ",
+          "start_ms": 138660,
+          "duration_ms": 210
+        },
+        {
+          "text": "the ",
+          "start_ms": 138870,
+          "duration_ms": 120
+        },
+        {
+          "text": "while ",
+          "start_ms": 138990,
+          "duration_ms": 1740
+        },
+        {
+          "text": "you ",
+          "start_ms": 140730,
+          "duration_ms": 450
+        },
+        {
+          "text": "hear ",
+          "start_ms": 141180,
+          "duration_ms": 210
+        },
+        {
+          "text": "the ",
+          "start_ms": 141390,
+          "duration_ms": 60
+        },
+        {
+          "text": "creature ",
+          "start_ms": 141450,
+          "duration_ms": 450
+        },
+        {
+          "text": "creepin' ",
+          "start_ms": 141900,
+          "duration_ms": 540
+        },
+        {
+          "text": "up ",
+          "start_ms": 142440,
+          "duration_ms": 150
+        },
+        {
+          "text": "behind",
+          "start_ms": 142590,
+          "duration_ms": 1260
+        }
+      ]
+    },
+    {
+      "start_ms": 143970,
+      "duration_ms": 1800,
+      "text": "You're out of time",
+      "words": [
+        {
+          "text": "You're ",
+          "start_ms": 143970,
+          "duration_ms": 480
+        },
+        {
+          "text": "out ",
+          "start_ms": 144450,
+          "duration_ms": 270
+        },
+        {
+          "text": "of ",
+          "start_ms": 144720,
+          "duration_ms": 90
+        },
+        {
+          "text": "time",
+          "start_ms": 144810,
+          "duration_ms": 960
+        }
+      ]
+    },
+    {
+      "start_ms": 145800,
+      "duration_ms": 5160,
+      "text": "'Cause this is thriller thriller night",
+      "words": [
+        {
+          "text": "'Cause ",
+          "start_ms": 145800,
+          "duration_ms": 900
+        },
+        {
+          "text": "this ",
+          "start_ms": 146700,
+          "duration_ms": 300
+        },
+        {
+          "text": "is ",
+          "start_ms": 147000,
+          "duration_ms": 180
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 147180,
+          "duration_ms": 1980
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 149160,
+          "duration_ms": 1050
+        },
+        {
+          "text": "night",
+          "start_ms": 150210,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 150990,
+      "duration_ms": 3870,
+      "text": "There ain't no second chance against the thing with forty eyes",
+      "words": [
+        {
+          "text": "There ",
+          "start_ms": 150990,
+          "duration_ms": 360
+        },
+        {
+          "text": "ain't ",
+          "start_ms": 151350,
+          "duration_ms": 210
+        },
+        {
+          "text": "no ",
+          "start_ms": 151560,
+          "duration_ms": 120
+        },
+        {
+          "text": "second ",
+          "start_ms": 151680,
+          "duration_ms": 480
+        },
+        {
+          "text": "chance ",
+          "start_ms": 152160,
+          "duration_ms": 420
+        },
+        {
+          "text": "against ",
+          "start_ms": 152580,
+          "duration_ms": 480
+        },
+        {
+          "text": "the ",
+          "start_ms": 153060,
+          "duration_ms": 90
+        },
+        {
+          "text": "thing ",
+          "start_ms": 153150,
+          "duration_ms": 420
+        },
+        {
+          "text": "with ",
+          "start_ms": 153570,
+          "duration_ms": 210
+        },
+        {
+          "text": "forty ",
+          "start_ms": 153780,
+          "duration_ms": 450
+        },
+        {
+          "text": "eyes",
+          "start_ms": 154230,
+          "duration_ms": 630
+        }
+      ]
+    },
+    {
+      "start_ms": 154860,
+      "duration_ms": 4080,
+      "text": "You know it's thriller thriller night",
+      "words": [
+        {
+          "text": "You ",
+          "start_ms": 154860,
+          "duration_ms": 680
+        },
+        {
+          "text": "know ",
+          "start_ms": 155540,
+          "duration_ms": 680
+        },
+        {
+          "text": "it's ",
+          "start_ms": 156220,
+          "duration_ms": 680
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 156900,
+          "duration_ms": 680
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 157580,
+          "duration_ms": 680
+        },
+        {
+          "text": "night",
+          "start_ms": 158260,
+          "duration_ms": 680
+        }
+      ]
+    },
+    {
+      "start_ms": 158970,
+      "duration_ms": 6480,
+      "text": "You're fighting for your life inside a killer thriller tonight",
+      "words": [
+        {
+          "text": "You're ",
+          "start_ms": 158970,
+          "duration_ms": 390
+        },
+        {
+          "text": "fighting ",
+          "start_ms": 159360,
+          "duration_ms": 510
+        },
+        {
+          "text": "for ",
+          "start_ms": 159870,
+          "duration_ms": 270
+        },
+        {
+          "text": "your ",
+          "start_ms": 160140,
+          "duration_ms": 120
+        },
+        {
+          "text": "life ",
+          "start_ms": 160260,
+          "duration_ms": 420
+        },
+        {
+          "text": "inside ",
+          "start_ms": 160680,
+          "duration_ms": 570
+        },
+        {
+          "text": "a ",
+          "start_ms": 161250,
+          "duration_ms": 330
+        },
+        {
+          "text": "killer ",
+          "start_ms": 161580,
+          "duration_ms": 780
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 162360,
+          "duration_ms": 780
+        },
+        {
+          "text": "tonight",
+          "start_ms": 163140,
+          "duration_ms": 2310
+        }
+      ]
+    },
+    {
+      "start_ms": 165450,
+      "duration_ms": 1500,
+      "text": "Night creatures call",
+      "words": [
+        {
+          "text": "Night ",
+          "start_ms": 165450,
+          "duration_ms": 420
+        },
+        {
+          "text": "creatures ",
+          "start_ms": 165870,
+          "duration_ms": 630
+        },
+        {
+          "text": "call",
+          "start_ms": 166500,
+          "duration_ms": 450
+        }
+      ]
+    },
+    {
+      "start_ms": 166950,
+      "duration_ms": 5250,
+      "text": "And the dead start to walk in their masquerade",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 166950,
+          "duration_ms": 210
+        },
+        {
+          "text": "the ",
+          "start_ms": 167160,
+          "duration_ms": 300
+        },
+        {
+          "text": "dead ",
+          "start_ms": 167460,
+          "duration_ms": 390
+        },
+        {
+          "text": "start ",
+          "start_ms": 167850,
+          "duration_ms": 390
+        },
+        {
+          "text": "to ",
+          "start_ms": 168240,
+          "duration_ms": 270
+        },
+        {
+          "text": "walk ",
+          "start_ms": 168510,
+          "duration_ms": 480
+        },
+        {
+          "text": "in ",
+          "start_ms": 168990,
+          "duration_ms": 240
+        },
+        {
+          "text": "their ",
+          "start_ms": 169230,
+          "duration_ms": 270
+        },
+        {
+          "text": "masquerade",
+          "start_ms": 169500,
+          "duration_ms": 2700
+        }
+      ]
+    },
+    {
+      "start_ms": 173250,
+      "duration_ms": 5490,
+      "text": "There's no escapin' the jaws of the alien this time",
+      "words": [
+        {
+          "text": "There's ",
+          "start_ms": 173250,
+          "duration_ms": 600
+        },
+        {
+          "text": "no ",
+          "start_ms": 173850,
+          "duration_ms": 390
+        },
+        {
+          "text": "escapin' ",
+          "start_ms": 174240,
+          "duration_ms": 990
+        },
+        {
+          "text": "the ",
+          "start_ms": 175230,
+          "duration_ms": 240
+        },
+        {
+          "text": "jaws ",
+          "start_ms": 175470,
+          "duration_ms": 570
+        },
+        {
+          "text": "of ",
+          "start_ms": 176040,
+          "duration_ms": 180
+        },
+        {
+          "text": "the ",
+          "start_ms": 176220,
+          "duration_ms": 420
+        },
+        {
+          "text": "alien ",
+          "start_ms": 176640,
+          "duration_ms": 540
+        },
+        {
+          "text": "this ",
+          "start_ms": 177180,
+          "duration_ms": 390
+        },
+        {
+          "text": "time",
+          "start_ms": 177570,
+          "duration_ms": 1170
+        }
+      ]
+    },
+    {
+      "start_ms": 178740,
+      "duration_ms": 930,
+      "text": "（they're open wide）",
+      "words": [
+        {
+          "text": "（",
+          "start_ms": 178740,
+          "duration_ms": 0
+        },
+        {
+          "text": "they're ",
+          "start_ms": 178740,
+          "duration_ms": 210
+        },
+        {
+          "text": "open ",
+          "start_ms": 178950,
+          "duration_ms": 630
+        },
+        {
+          "text": "wide",
+          "start_ms": 179580,
+          "duration_ms": 90
+        },
+        {
+          "text": "）",
+          "start_ms": 179670,
+          "duration_ms": 0
+        }
+      ]
+    },
+    {
+      "start_ms": 179670,
+      "duration_ms": 4710,
+      "text": "This is the end of your life",
+      "words": [
+        {
+          "text": "This ",
+          "start_ms": 179670,
+          "duration_ms": 420
+        },
+        {
+          "text": "is ",
+          "start_ms": 180090,
+          "duration_ms": 240
+        },
+        {
+          "text": "the ",
+          "start_ms": 180330,
+          "duration_ms": 420
+        },
+        {
+          "text": "end ",
+          "start_ms": 180750,
+          "duration_ms": 600
+        },
+        {
+          "text": "of ",
+          "start_ms": 181350,
+          "duration_ms": 240
+        },
+        {
+          "text": "your ",
+          "start_ms": 181590,
+          "duration_ms": 150
+        },
+        {
+          "text": "life",
+          "start_ms": 181740,
+          "duration_ms": 2640
+        }
+      ]
+    },
+    {
+      "start_ms": 186990,
+      "duration_ms": 6030,
+      "text": "They're out to get you there's demons closing in on every side",
+      "words": [
+        {
+          "text": "They're ",
+          "start_ms": 186990,
+          "duration_ms": 330
+        },
+        {
+          "text": "out ",
+          "start_ms": 187320,
+          "duration_ms": 180
+        },
+        {
+          "text": "to ",
+          "start_ms": 187500,
+          "duration_ms": 90
+        },
+        {
+          "text": "get ",
+          "start_ms": 187590,
+          "duration_ms": 1140
+        },
+        {
+          "text": "you ",
+          "start_ms": 188730,
+          "duration_ms": 870
+        },
+        {
+          "text": "there's ",
+          "start_ms": 189600,
+          "duration_ms": 210
+        },
+        {
+          "text": "demons ",
+          "start_ms": 189810,
+          "duration_ms": 450
+        },
+        {
+          "text": "closing ",
+          "start_ms": 190260,
+          "duration_ms": 600
+        },
+        {
+          "text": "in ",
+          "start_ms": 190860,
+          "duration_ms": 210
+        },
+        {
+          "text": "on ",
+          "start_ms": 191070,
+          "duration_ms": 270
+        },
+        {
+          "text": "every ",
+          "start_ms": 191340,
+          "duration_ms": 300
+        },
+        {
+          "text": "side",
+          "start_ms": 191640,
+          "duration_ms": 1380
+        }
+      ]
+    },
+    {
+      "start_ms": 195090,
+      "duration_ms": 5760,
+      "text": "They will possess you unless you change the number on your dial",
+      "words": [
+        {
+          "text": "They ",
+          "start_ms": 195090,
+          "duration_ms": 210
+        },
+        {
+          "text": "will ",
+          "start_ms": 195300,
+          "duration_ms": 270
+        },
+        {
+          "text": "possess ",
+          "start_ms": 195570,
+          "duration_ms": 1170
+        },
+        {
+          "text": "you ",
+          "start_ms": 196740,
+          "duration_ms": 1080
+        },
+        {
+          "text": "unless ",
+          "start_ms": 197820,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 198150,
+          "duration_ms": 180
+        },
+        {
+          "text": "change ",
+          "start_ms": 198330,
+          "duration_ms": 330
+        },
+        {
+          "text": "the ",
+          "start_ms": 198660,
+          "duration_ms": 210
+        },
+        {
+          "text": "number ",
+          "start_ms": 198870,
+          "duration_ms": 570
+        },
+        {
+          "text": "on ",
+          "start_ms": 199440,
+          "duration_ms": 240
+        },
+        {
+          "text": "your ",
+          "start_ms": 199680,
+          "duration_ms": 120
+        },
+        {
+          "text": "dial",
+          "start_ms": 199800,
+          "duration_ms": 1050
+        }
+      ]
+    },
+    {
+      "start_ms": 201180,
+      "duration_ms": 5970,
+      "text": "Now is the time for you and I to cuddle close together",
+      "words": [
+        {
+          "text": "Now ",
+          "start_ms": 201180,
+          "duration_ms": 330
+        },
+        {
+          "text": "is ",
+          "start_ms": 201510,
+          "duration_ms": 180
+        },
+        {
+          "text": "the ",
+          "start_ms": 201690,
+          "duration_ms": 120
+        },
+        {
+          "text": "time ",
+          "start_ms": 201810,
+          "duration_ms": 1770
+        },
+        {
+          "text": "for ",
+          "start_ms": 203580,
+          "duration_ms": 390
+        },
+        {
+          "text": "you ",
+          "start_ms": 203970,
+          "duration_ms": 240
+        },
+        {
+          "text": "and ",
+          "start_ms": 204210,
+          "duration_ms": 240
+        },
+        {
+          "text": "I ",
+          "start_ms": 204450,
+          "duration_ms": 180
+        },
+        {
+          "text": "to ",
+          "start_ms": 204630,
+          "duration_ms": 120
+        },
+        {
+          "text": "cuddle ",
+          "start_ms": 204750,
+          "duration_ms": 540
+        },
+        {
+          "text": "close ",
+          "start_ms": 205290,
+          "duration_ms": 330
+        },
+        {
+          "text": "together",
+          "start_ms": 205620,
+          "duration_ms": 1530
+        }
+      ]
+    },
+    {
+      "start_ms": 209220,
+      "duration_ms": 5400,
+      "text": "All thru the night I'll save you from the terrors on the screen",
+      "words": [
+        {
+          "text": "All ",
+          "start_ms": 209220,
+          "duration_ms": 270
+        },
+        {
+          "text": "thru ",
+          "start_ms": 209490,
+          "duration_ms": 240
+        },
+        {
+          "text": "the ",
+          "start_ms": 209730,
+          "duration_ms": 180
+        },
+        {
+          "text": "night ",
+          "start_ms": 209910,
+          "duration_ms": 1770
+        },
+        {
+          "text": "I'll ",
+          "start_ms": 211680,
+          "duration_ms": 330
+        },
+        {
+          "text": "save ",
+          "start_ms": 212010,
+          "duration_ms": 300
+        },
+        {
+          "text": "you ",
+          "start_ms": 212310,
+          "duration_ms": 120
+        },
+        {
+          "text": "from ",
+          "start_ms": 212430,
+          "duration_ms": 300
+        },
+        {
+          "text": "the ",
+          "start_ms": 212730,
+          "duration_ms": 150
+        },
+        {
+          "text": "terrors ",
+          "start_ms": 212880,
+          "duration_ms": 570
+        },
+        {
+          "text": "on ",
+          "start_ms": 213450,
+          "duration_ms": 240
+        },
+        {
+          "text": "the ",
+          "start_ms": 213690,
+          "duration_ms": 60
+        },
+        {
+          "text": "screen",
+          "start_ms": 213750,
+          "duration_ms": 870
+        }
+      ]
+    },
+    {
+      "start_ms": 215100,
+      "duration_ms": 2100,
+      "text": "I'll make you see",
+      "words": [
+        {
+          "text": "I'll ",
+          "start_ms": 215100,
+          "duration_ms": 210
+        },
+        {
+          "text": "make ",
+          "start_ms": 215310,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 215640,
+          "duration_ms": 120
+        },
+        {
+          "text": "see",
+          "start_ms": 215760,
+          "duration_ms": 1440
+        }
+      ]
+    },
+    {
+      "start_ms": 217230,
+      "duration_ms": 4530,
+      "text": "That it's a thriller thriller night",
+      "words": [
+        {
+          "text": "That ",
+          "start_ms": 217230,
+          "duration_ms": 480
+        },
+        {
+          "text": "it's ",
+          "start_ms": 217710,
+          "duration_ms": 270
+        },
+        {
+          "text": "a ",
+          "start_ms": 217980,
+          "duration_ms": 90
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 218070,
+          "duration_ms": 2010
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 220080,
+          "duration_ms": 1050
+        },
+        {
+          "text": "night",
+          "start_ms": 221130,
+          "duration_ms": 630
+        }
+      ]
+    },
+    {
+      "start_ms": 221820,
+      "duration_ms": 4350,
+      "text": "'Cause I can thrill you more than any ghost would dare to try",
+      "words": [
+        {
+          "text": "'Cause ",
+          "start_ms": 221820,
+          "duration_ms": 450
+        },
+        {
+          "text": "I ",
+          "start_ms": 222270,
+          "duration_ms": 180
+        },
+        {
+          "text": "can ",
+          "start_ms": 222450,
+          "duration_ms": 240
+        },
+        {
+          "text": "thrill ",
+          "start_ms": 222690,
+          "duration_ms": 270
+        },
+        {
+          "text": "you ",
+          "start_ms": 222960,
+          "duration_ms": 120
+        },
+        {
+          "text": "more ",
+          "start_ms": 223080,
+          "duration_ms": 360
+        },
+        {
+          "text": "than ",
+          "start_ms": 223440,
+          "duration_ms": 300
+        },
+        {
+          "text": "any ",
+          "start_ms": 223740,
+          "duration_ms": 300
+        },
+        {
+          "text": "ghost ",
+          "start_ms": 224040,
+          "duration_ms": 480
+        },
+        {
+          "text": "would ",
+          "start_ms": 224520,
+          "duration_ms": 210
+        },
+        {
+          "text": "dare ",
+          "start_ms": 224730,
+          "duration_ms": 330
+        },
+        {
+          "text": "to ",
+          "start_ms": 225060,
+          "duration_ms": 600
+        },
+        {
+          "text": "try",
+          "start_ms": 225660,
+          "duration_ms": 510
+        }
+      ]
+    },
+    {
+      "start_ms": 226170,
+      "duration_ms": 3630,
+      "text": "Girl this is thriller thriller night",
+      "words": [
+        {
+          "text": "Girl ",
+          "start_ms": 226170,
+          "duration_ms": 605
+        },
+        {
+          "text": "this ",
+          "start_ms": 226775,
+          "duration_ms": 605
+        },
+        {
+          "text": "is ",
+          "start_ms": 227380,
+          "duration_ms": 605
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 227985,
+          "duration_ms": 605
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 228590,
+          "duration_ms": 605
+        },
+        {
+          "text": "night",
+          "start_ms": 229195,
+          "duration_ms": 605
+        }
+      ]
+    },
+    {
+      "start_ms": 229830,
+      "duration_ms": 4950,
+      "text": "So let me hold you tight and share a killer diller chiller",
+      "words": [
+        {
+          "text": "So ",
+          "start_ms": 229830,
+          "duration_ms": 300
+        },
+        {
+          "text": "let ",
+          "start_ms": 230130,
+          "duration_ms": 450
+        },
+        {
+          "text": "me ",
+          "start_ms": 230580,
+          "duration_ms": 180
+        },
+        {
+          "text": "hold ",
+          "start_ms": 230760,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 231090,
+          "duration_ms": 90
+        },
+        {
+          "text": "tight ",
+          "start_ms": 231180,
+          "duration_ms": 450
+        },
+        {
+          "text": "and ",
+          "start_ms": 231630,
+          "duration_ms": 120
+        },
+        {
+          "text": "share ",
+          "start_ms": 231750,
+          "duration_ms": 420
+        },
+        {
+          "text": "a ",
+          "start_ms": 232170,
+          "duration_ms": 330
+        },
+        {
+          "text": "killer ",
+          "start_ms": 232500,
+          "duration_ms": 780
+        },
+        {
+          "text": "diller ",
+          "start_ms": 233280,
+          "duration_ms": 750
+        },
+        {
+          "text": "chiller",
+          "start_ms": 234030,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 234810,
+      "duration_ms": 3090,
+      "text": "Thriller here tonight",
+      "words": [
+        {
+          "text": "Thriller ",
+          "start_ms": 234810,
+          "duration_ms": 780
+        },
+        {
+          "text": "here ",
+          "start_ms": 235590,
+          "duration_ms": 300
+        },
+        {
+          "text": "tonight",
+          "start_ms": 235890,
+          "duration_ms": 2010
+        }
+      ]
+    },
+    {
+      "start_ms": 237900,
+      "duration_ms": 4110,
+      "text": "That it's a thriller thriller night",
+      "words": [
+        {
+          "text": "That ",
+          "start_ms": 237900,
+          "duration_ms": 300
+        },
+        {
+          "text": "it's ",
+          "start_ms": 238200,
+          "duration_ms": 90
+        },
+        {
+          "text": "a ",
+          "start_ms": 238290,
+          "duration_ms": 30
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 238320,
+          "duration_ms": 2040
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 240360,
+          "duration_ms": 1020
+        },
+        {
+          "text": "night",
+          "start_ms": 241380,
+          "duration_ms": 630
+        }
+      ]
+    },
+    {
+      "start_ms": 242040,
+      "duration_ms": 4710,
+      "text": "'Cause I can thrill you more than any ghost would dare to try",
+      "words": [
+        {
+          "text": "'Cause ",
+          "start_ms": 242040,
+          "duration_ms": 480
+        },
+        {
+          "text": "I ",
+          "start_ms": 242520,
+          "duration_ms": 180
+        },
+        {
+          "text": "can ",
+          "start_ms": 242700,
+          "duration_ms": 210
+        },
+        {
+          "text": "thrill ",
+          "start_ms": 242910,
+          "duration_ms": 300
+        },
+        {
+          "text": "you ",
+          "start_ms": 243210,
+          "duration_ms": 120
+        },
+        {
+          "text": "more ",
+          "start_ms": 243330,
+          "duration_ms": 360
+        },
+        {
+          "text": "than ",
+          "start_ms": 243690,
+          "duration_ms": 420
+        },
+        {
+          "text": "any ",
+          "start_ms": 244110,
+          "duration_ms": 180
+        },
+        {
+          "text": "ghost ",
+          "start_ms": 244290,
+          "duration_ms": 480
+        },
+        {
+          "text": "would ",
+          "start_ms": 244770,
+          "duration_ms": 540
+        },
+        {
+          "text": "dare ",
+          "start_ms": 245310,
+          "duration_ms": 660
+        },
+        {
+          "text": "to ",
+          "start_ms": 245970,
+          "duration_ms": 60
+        },
+        {
+          "text": "try",
+          "start_ms": 246030,
+          "duration_ms": 720
+        }
+      ]
+    },
+    {
+      "start_ms": 246750,
+      "duration_ms": 3330,
+      "text": "Girl this is thriller thriller night",
+      "words": [
+        {
+          "text": "Girl ",
+          "start_ms": 246750,
+          "duration_ms": 555
+        },
+        {
+          "text": "this ",
+          "start_ms": 247305,
+          "duration_ms": 555
+        },
+        {
+          "text": "is ",
+          "start_ms": 247860,
+          "duration_ms": 555
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 248415,
+          "duration_ms": 555
+        },
+        {
+          "text": "thriller ",
+          "start_ms": 248970,
+          "duration_ms": 555
+        },
+        {
+          "text": "night",
+          "start_ms": 249525,
+          "duration_ms": 555
+        }
+      ]
+    },
+    {
+      "start_ms": 250110,
+      "duration_ms": 5130,
+      "text": "So let me hold you tight and share a killer diller chiller",
+      "words": [
+        {
+          "text": "So ",
+          "start_ms": 250110,
+          "duration_ms": 300
+        },
+        {
+          "text": "let ",
+          "start_ms": 250410,
+          "duration_ms": 420
+        },
+        {
+          "text": "me ",
+          "start_ms": 250830,
+          "duration_ms": 180
+        },
+        {
+          "text": "hold ",
+          "start_ms": 251010,
+          "duration_ms": 330
+        },
+        {
+          "text": "you ",
+          "start_ms": 251340,
+          "duration_ms": 60
+        },
+        {
+          "text": "tight ",
+          "start_ms": 251400,
+          "duration_ms": 480
+        },
+        {
+          "text": "and ",
+          "start_ms": 251880,
+          "duration_ms": 120
+        },
+        {
+          "text": "share ",
+          "start_ms": 252000,
+          "duration_ms": 390
+        },
+        {
+          "text": "a ",
+          "start_ms": 252390,
+          "duration_ms": 180
+        },
+        {
+          "text": "killer ",
+          "start_ms": 252570,
+          "duration_ms": 960
+        },
+        {
+          "text": "diller ",
+          "start_ms": 253530,
+          "duration_ms": 1020
+        },
+        {
+          "text": "chiller",
+          "start_ms": 254550,
+          "duration_ms": 690
+        }
+      ]
+    },
+    {
+      "start_ms": 264180,
+      "duration_ms": 3180,
+      "text": "Darkness falls across the land",
+      "words": [
+        {
+          "text": "Darkness ",
+          "start_ms": 264180,
+          "duration_ms": 870
+        },
+        {
+          "text": "falls ",
+          "start_ms": 265050,
+          "duration_ms": 660
+        },
+        {
+          "text": "across ",
+          "start_ms": 265710,
+          "duration_ms": 510
+        },
+        {
+          "text": "the ",
+          "start_ms": 266220,
+          "duration_ms": 150
+        },
+        {
+          "text": "land",
+          "start_ms": 266370,
+          "duration_ms": 990
+        }
+      ]
+    },
+    {
+      "start_ms": 267810,
+      "duration_ms": 3330,
+      "text": "The midnite hour is close at hand",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 267810,
+          "duration_ms": 240
+        },
+        {
+          "text": "midnite ",
+          "start_ms": 268050,
+          "duration_ms": 660
+        },
+        {
+          "text": "hour ",
+          "start_ms": 268710,
+          "duration_ms": 480
+        },
+        {
+          "text": "is ",
+          "start_ms": 269190,
+          "duration_ms": 240
+        },
+        {
+          "text": "close ",
+          "start_ms": 269430,
+          "duration_ms": 570
+        },
+        {
+          "text": "at ",
+          "start_ms": 270000,
+          "duration_ms": 120
+        },
+        {
+          "text": "hand",
+          "start_ms": 270120,
+          "duration_ms": 1020
+        }
+      ]
+    },
+    {
+      "start_ms": 271410,
+      "duration_ms": 3090,
+      "text": "Creatures crawl in search of blood",
+      "words": [
+        {
+          "text": "Creatures ",
+          "start_ms": 271410,
+          "duration_ms": 900
+        },
+        {
+          "text": "crawl ",
+          "start_ms": 272310,
+          "duration_ms": 510
+        },
+        {
+          "text": "in ",
+          "start_ms": 272820,
+          "duration_ms": 270
+        },
+        {
+          "text": "search ",
+          "start_ms": 273090,
+          "duration_ms": 480
+        },
+        {
+          "text": "of ",
+          "start_ms": 273570,
+          "duration_ms": 180
+        },
+        {
+          "text": "blood",
+          "start_ms": 273750,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 275130,
+      "duration_ms": 2850,
+      "text": "To terrorize y'awl's neighborhood",
+      "words": [
+        {
+          "text": "To ",
+          "start_ms": 275130,
+          "duration_ms": 210
+        },
+        {
+          "text": "terrorize ",
+          "start_ms": 275340,
+          "duration_ms": 990
+        },
+        {
+          "text": "y'awl's ",
+          "start_ms": 276330,
+          "duration_ms": 450
+        },
+        {
+          "text": "neighborhood",
+          "start_ms": 276780,
+          "duration_ms": 1200
+        }
+      ]
+    },
+    {
+      "start_ms": 279090,
+      "duration_ms": 3120,
+      "text": "And whosoever shall be found",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 279090,
+          "duration_ms": 150
+        },
+        {
+          "text": "whosoever ",
+          "start_ms": 279240,
+          "duration_ms": 1020
+        },
+        {
+          "text": "shall ",
+          "start_ms": 280260,
+          "duration_ms": 420
+        },
+        {
+          "text": "be ",
+          "start_ms": 280680,
+          "duration_ms": 210
+        },
+        {
+          "text": "found",
+          "start_ms": 280890,
+          "duration_ms": 1320
+        }
+      ]
+    },
+    {
+      "start_ms": 282240,
+      "duration_ms": 3360,
+      "text": "Without the soul for getting down",
+      "words": [
+        {
+          "text": "Without ",
+          "start_ms": 282240,
+          "duration_ms": 540
+        },
+        {
+          "text": "the ",
+          "start_ms": 282780,
+          "duration_ms": 150
+        },
+        {
+          "text": "soul ",
+          "start_ms": 282930,
+          "duration_ms": 600
+        },
+        {
+          "text": "for ",
+          "start_ms": 283530,
+          "duration_ms": 390
+        },
+        {
+          "text": "getting ",
+          "start_ms": 283920,
+          "duration_ms": 630
+        },
+        {
+          "text": "down",
+          "start_ms": 284550,
+          "duration_ms": 1050
+        }
+      ]
+    },
+    {
+      "start_ms": 286080,
+      "duration_ms": 4080,
+      "text": "Must stand and face the hounds of hell",
+      "words": [
+        {
+          "text": "Must ",
+          "start_ms": 286080,
+          "duration_ms": 270
+        },
+        {
+          "text": "stand ",
+          "start_ms": 286350,
+          "duration_ms": 660
+        },
+        {
+          "text": "and ",
+          "start_ms": 287010,
+          "duration_ms": 210
+        },
+        {
+          "text": "face ",
+          "start_ms": 287220,
+          "duration_ms": 510
+        },
+        {
+          "text": "the ",
+          "start_ms": 287730,
+          "duration_ms": 150
+        },
+        {
+          "text": "hounds ",
+          "start_ms": 287880,
+          "duration_ms": 720
+        },
+        {
+          "text": "of ",
+          "start_ms": 288600,
+          "duration_ms": 180
+        },
+        {
+          "text": "hell",
+          "start_ms": 288780,
+          "duration_ms": 1380
+        }
+      ]
+    },
+    {
+      "start_ms": 290250,
+      "duration_ms": 3480,
+      "text": "And rot inside a corpse's shell",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 290250,
+          "duration_ms": 270
+        },
+        {
+          "text": "rot ",
+          "start_ms": 290520,
+          "duration_ms": 780
+        },
+        {
+          "text": "inside ",
+          "start_ms": 291300,
+          "duration_ms": 750
+        },
+        {
+          "text": "a ",
+          "start_ms": 292050,
+          "duration_ms": 90
+        },
+        {
+          "text": "corpse's ",
+          "start_ms": 292140,
+          "duration_ms": 780
+        },
+        {
+          "text": "shell",
+          "start_ms": 292920,
+          "duration_ms": 810
+        }
+      ]
+    },
+    {
+      "start_ms": 314250,
+      "duration_ms": 2700,
+      "text": "The foulest stench is in the air",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 314250,
+          "duration_ms": 240
+        },
+        {
+          "text": "foulest ",
+          "start_ms": 314490,
+          "duration_ms": 870
+        },
+        {
+          "text": "stench ",
+          "start_ms": 315360,
+          "duration_ms": 450
+        },
+        {
+          "text": "is ",
+          "start_ms": 315810,
+          "duration_ms": 180
+        },
+        {
+          "text": "in ",
+          "start_ms": 315990,
+          "duration_ms": 180
+        },
+        {
+          "text": "the ",
+          "start_ms": 316170,
+          "duration_ms": 180
+        },
+        {
+          "text": "air",
+          "start_ms": 316350,
+          "duration_ms": 600
+        }
+      ]
+    },
+    {
+      "start_ms": 317130,
+      "duration_ms": 2940,
+      "text": "The funk of forty thousand years",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 317130,
+          "duration_ms": 240
+        },
+        {
+          "text": "funk ",
+          "start_ms": 317370,
+          "duration_ms": 570
+        },
+        {
+          "text": "of ",
+          "start_ms": 317940,
+          "duration_ms": 120
+        },
+        {
+          "text": "forty ",
+          "start_ms": 318060,
+          "duration_ms": 660
+        },
+        {
+          "text": "thousand ",
+          "start_ms": 318720,
+          "duration_ms": 690
+        },
+        {
+          "text": "years",
+          "start_ms": 319410,
+          "duration_ms": 660
+        }
+      ]
+    },
+    {
+      "start_ms": 320280,
+      "duration_ms": 3090,
+      "text": "And grizzly ghouls from every tomb",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 320280,
+          "duration_ms": 210
+        },
+        {
+          "text": "grizzly ",
+          "start_ms": 320490,
+          "duration_ms": 720
+        },
+        {
+          "text": "ghouls ",
+          "start_ms": 321210,
+          "duration_ms": 600
+        },
+        {
+          "text": "from ",
+          "start_ms": 321810,
+          "duration_ms": 300
+        },
+        {
+          "text": "every ",
+          "start_ms": 322110,
+          "duration_ms": 510
+        },
+        {
+          "text": "tomb",
+          "start_ms": 322620,
+          "duration_ms": 750
+        }
+      ]
+    },
+    {
+      "start_ms": 323370,
+      "duration_ms": 630,
+      "text": "Ma Jiali 1999/08/01",
+      "words": [
+        {
+          "text": "Ma ",
+          "start_ms": 323370,
+          "duration_ms": 90
+        },
+        {
+          "text": "Jiali ",
+          "start_ms": 323460,
+          "duration_ms": 90
+        },
+        {
+          "text": "1999",
+          "start_ms": 323550,
+          "duration_ms": 90
+        },
+        {
+          "text": "/",
+          "start_ms": 323640,
+          "duration_ms": 90
+        },
+        {
+          "text": "08",
+          "start_ms": 323730,
+          "duration_ms": 90
+        },
+        {
+          "text": "/",
+          "start_ms": 323820,
+          "duration_ms": 90
+        },
+        {
+          "text": "01",
+          "start_ms": 323910,
+          "duration_ms": 90
+        }
+      ]
+    },
+    {
+      "start_ms": 324000,
+      "duration_ms": 3600,
+      "text": "Are closing in to seal your doom",
+      "words": [
+        {
+          "text": "Are ",
+          "start_ms": 324000,
+          "duration_ms": 90
+        },
+        {
+          "text": "closing ",
+          "start_ms": 324090,
+          "duration_ms": 990
+        },
+        {
+          "text": "in ",
+          "start_ms": 325080,
+          "duration_ms": 480
+        },
+        {
+          "text": "to ",
+          "start_ms": 325560,
+          "duration_ms": 180
+        },
+        {
+          "text": "seal ",
+          "start_ms": 325740,
+          "duration_ms": 690
+        },
+        {
+          "text": "your ",
+          "start_ms": 326430,
+          "duration_ms": 360
+        },
+        {
+          "text": "doom",
+          "start_ms": 326790,
+          "duration_ms": 810
+        }
+      ]
+    },
+    {
+      "start_ms": 328200,
+      "duration_ms": 2970,
+      "text": "And though you fight to stay alive",
+      "words": [
+        {
+          "text": "And ",
+          "start_ms": 328200,
+          "duration_ms": 180
+        },
+        {
+          "text": "though ",
+          "start_ms": 328380,
+          "duration_ms": 360
+        },
+        {
+          "text": "you ",
+          "start_ms": 328740,
+          "duration_ms": 240
+        },
+        {
+          "text": "fight ",
+          "start_ms": 328980,
+          "duration_ms": 810
+        },
+        {
+          "text": "to ",
+          "start_ms": 329790,
+          "duration_ms": 210
+        },
+        {
+          "text": "stay ",
+          "start_ms": 330000,
+          "duration_ms": 390
+        },
+        {
+          "text": "alive",
+          "start_ms": 330390,
+          "duration_ms": 780
+        }
+      ]
+    },
+    {
+      "start_ms": 331530,
+      "duration_ms": 3030,
+      "text": "Your body starts to shiver",
+      "words": [
+        {
+          "text": "Your ",
+          "start_ms": 331530,
+          "duration_ms": 300
+        },
+        {
+          "text": "body ",
+          "start_ms": 331830,
+          "duration_ms": 690
+        },
+        {
+          "text": "starts ",
+          "start_ms": 332520,
+          "duration_ms": 780
+        },
+        {
+          "text": "to ",
+          "start_ms": 333300,
+          "duration_ms": 300
+        },
+        {
+          "text": "shiver",
+          "start_ms": 333600,
+          "duration_ms": 960
+        }
+      ]
+    },
+    {
+      "start_ms": 335190,
+      "duration_ms": 3540,
+      "text": "For no mere mortal can resist",
+      "words": [
+        {
+          "text": "For ",
+          "start_ms": 335190,
+          "duration_ms": 330
+        },
+        {
+          "text": "no ",
+          "start_ms": 335520,
+          "duration_ms": 570
+        },
+        {
+          "text": "mere ",
+          "start_ms": 336090,
+          "duration_ms": 330
+        },
+        {
+          "text": "mortal ",
+          "start_ms": 336420,
+          "duration_ms": 780
+        },
+        {
+          "text": "can ",
+          "start_ms": 337200,
+          "duration_ms": 390
+        },
+        {
+          "text": "resist",
+          "start_ms": 337590,
+          "duration_ms": 1140
+        }
+      ]
+    },
+    {
+      "start_ms": 339150,
+      "duration_ms": 4650,
+      "text": "The evil of the thriller",
+      "words": [
+        {
+          "text": "The ",
+          "start_ms": 339150,
+          "duration_ms": 390
+        },
+        {
+          "text": "evil ",
+          "start_ms": 339540,
+          "duration_ms": 1200
+        },
+        {
+          "text": "of ",
+          "start_ms": 340740,
+          "duration_ms": 960
+        },
+        {
+          "text": "the ",
+          "start_ms": 341700,
+          "duration_ms": 300
+        },
+        {
+          "text": "thriller",
+          "start_ms": 342000,
+          "duration_ms": 1800
+        }
+      ]
+    }
+  ]
+}

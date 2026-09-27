@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import lrclib_client
 from lyric_overlay import LyricOverlay
+from netease_lyrics import NeteaseLookup
 from lrclib_client import LrcLibError, LyricLookup, LyricWindow, format_clock, windows_choice_store
 from spotify_client.auth import (
     TOKEN_PATH,
@@ -46,6 +47,8 @@ SPOTIFY_POLL_NO_LYRICS_SECONDS = 30.0
 # How often to check the local clock for a new lyric pair. The pair itself is
 # printed only when it changes.
 LYRIC_DISPLAY_SECONDS = 0.1
+# Word fills repaint with the display. 16 ms is about 60 frames a second.
+WORD_PAINT_MS = 16
 # A Spotify poll can report progress_ms from a moment before the response
 # arrives, so it lands slightly behind the local clock. Treat a rewind smaller
 # than this as that delay. A larger rewind is a real seek and is applied.
@@ -373,6 +376,10 @@ class OverlayFollow(QObject):
         self.session = session
         self.playback = None
         self.lyrics = lyrics
+        self.netease = NeteaseLookup()
+        self._netease_announced: tuple | None = None
+        self._netease_hold_until = 0.0
+        self._seeked = False
         self.window = window
         self.anchor_progress = 0
         self.anchor_at = time.monotonic()
@@ -400,6 +407,45 @@ class OverlayFollow(QObject):
         if duration is not None:
             progress = min(progress, duration)
         self.window.set_playing(self.playing)
+        self.netease.consider(now, self._seeked)
+        self._seeked = False
+        phase = self.netease.phase()
+        song_key = self.netease.song_key()
+        if phase == "choose":
+            choice_key = ("netease-choose", song_key)
+            if self._shown != choice_key:
+                self._shown = choice_key
+                self.window.set_choices(self.netease.candidates(), self.netease.accept, "netease_pick")
+            return
+        if phase == "search":
+            self._warm_lrclib(now, progress)
+            if self._shown != "netease_search":
+                self._shown = "netease_search"
+                self.window.set_status("netease_search")
+            return
+        if phase in ("saved", "none", "error"):
+            token = (song_key, phase, self.netease.reason_key())
+            if self._netease_announced != token:
+                self._netease_announced = token
+                hold = 2.0 if phase == "saved" else 4.0
+                self._netease_hold_until = time.monotonic() + hold
+                status = {"saved": "netease_saved", "none": "netease_none", "error": "netease_error"}[phase]
+                if phase != "saved" and self.netease.reason_key():
+                    status = self.netease.reason_key()
+                self._shown = ("netease", song_key, status)
+                self.window.set_status(status, self.netease.detail())
+                return
+            if time.monotonic() < self._netease_hold_until:
+                return
+        if phase in ("saved", "words"):
+            frame = self.netease.frame_at(progress)
+            if frame is not None:
+                self._set_paint_interval(self.playing)
+                if frame != self._shown:
+                    self._shown = frame
+                    self.window.set_words(frame[1], frame[2], frame[0])
+                return
+        self._set_paint_interval(False)
         try:
             shown = _lyric_print(self.lyrics, now, progress)
         except LrcLibError:
@@ -421,6 +467,55 @@ class OverlayFollow(QObject):
             return
         self._shown = slots
         self.window.set_lines(slots[0], slots[1], slots[2])
+
+    def _set_paint_interval(self, fast: bool) -> None:
+        """Repaint word fills at display rate, and line changes on the slower clock.
+
+        Purpose:
+            A 100 ms step is enough to switch lyric lines. A word wipe needs
+            a new frame about 60 times a second or the color jumps forward.
+
+        Parameters:
+            fast (bool): True while a NetEase word line is on screen and audio
+                is playing.
+
+        Returns:
+            None.
+
+        Precondition:
+            The overlay timer exists.
+
+        Postcondition:
+            The timer interval is WORD_PAINT_MS or LYRIC_DISPLAY_SECONDS.
+        """
+        interval = WORD_PAINT_MS if fast else int(LYRIC_DISPLAY_SECONDS * 1000)
+        if self.timer.interval() != interval:
+            self.timer.setInterval(interval)
+
+    def _warm_lrclib(self, now: dict | None, progress_ms: int) -> None:
+        """Load the LRCLIB line lyric while NetEase is still being checked.
+
+        Purpose:
+            The lyric area shows the NetEase status first. The LRCLIB lines
+            are ready when that check finishes.
+
+        Parameters:
+            now (dict | None): Current playback body.
+            progress_ms (int): Local playback position.
+
+        Returns:
+            None.
+
+        Precondition:
+            progress_ms is >= 0.
+
+        Postcondition:
+            A busy LRCLIB response is ignored. The overlay text is unchanged.
+        """
+        try:
+            self.lyrics.window_at(now, progress_ms)
+        except LrcLibError:
+            return
 
     def previous(self) -> None:
         """Ask the active source to go to the previous track."""
@@ -471,6 +566,7 @@ class OverlayFollow(QObject):
             and reported < estimate
             and estimate - reported < SEEK_REWIND_MS
         )
+        self._seeked = _position_jumped(track, self.last_track, reported, estimate, small_rewind)
         self.anchor_progress = estimate if small_rewind else reported
         self.anchor_at = time.monotonic()
         self.last_poll = self.anchor_at
@@ -495,6 +591,7 @@ class OverlayFollow(QObject):
             and reported < estimate
             and estimate - reported < SEEK_REWIND_MS
         )
+        self._seeked = _position_jumped(track, self.last_track, reported, estimate, small_rewind)
         self.anchor_progress = estimate if small_rewind else reported
         self.anchor_at = time.monotonic()
         self.last_poll = self.anchor_at
@@ -502,6 +599,41 @@ class OverlayFollow(QObject):
         self.last_track = track
         self._now = now
         return now
+
+
+def _position_jumped(
+    track: str | None,
+    last_track: str | None,
+    reported: int,
+    estimate: int,
+    small_rewind: bool,
+) -> bool:
+    """Return True when playback skipped inside the same song.
+
+    Purpose:
+        A small rewind is the delay between a playback sample and the local
+        clock. A larger jump, forward or back, is the user skipping inside
+        the track.
+
+    Parameters:
+        track (str | None): Current track id.
+        last_track (str | None): Track id from the previous sample.
+        reported (int): Position from the new sample, in milliseconds.
+        estimate (int): Position the local clock expected.
+        small_rewind (bool): True when the sample is only slightly behind.
+
+    Returns:
+        bool: True for a skip inside the current song.
+
+    Precondition:
+        reported and estimate are millisecond positions.
+
+    Postcondition:
+        A song change is not reported as a skip.
+    """
+    if track is None or track != last_track or small_rewind:
+        return False
+    return abs(reported - estimate) >= SEEK_REWIND_MS
 
 
 def run_windows_overlay(lyrics: LyricLookup) -> None:
