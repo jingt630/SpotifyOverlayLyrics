@@ -12,8 +12,10 @@ from pathlib import Path
 
 from opencc import OpenCC
 
-_SCRIPT_DIR = Path(__file__).resolve().parent / ".spotify" / "lyric_script"
-_KANJI_PATH = Path(__file__).resolve().parent / "chinese_script_data" / "japanese_kanji.txt"
+from app_paths import resource_dir, user_data_dir
+
+_SCRIPT_DIR = user_data_dir() / ".spotify" / "lyric_script"
+_KANJI_PATH = resource_dir() / "chinese_script_data" / "japanese_kanji.txt"
 _MODES = ("original", "simplified", "traditional")
 _s2t: OpenCC | None = None
 _t2s: OpenCC | None = None

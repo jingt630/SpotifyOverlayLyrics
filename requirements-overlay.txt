@@ -1,0 +1,5 @@
+PyQt6
+opencc-python-reimplemented
+cryptography
+zhconv
+winsdk==1.0.0b10

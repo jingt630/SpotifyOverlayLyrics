@@ -14,12 +14,13 @@ import time
 import unicodedata
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parent / ".localLyric"
-_UI_PATH = Path(__file__).resolve().parent / ".spotify" / "overlay_ui.json"
+from app_paths import resource_dir, user_data_dir
+
+_ROOT = user_data_dir() / ".localLyric"
+_UI_PATH = user_data_dir() / ".spotify" / "overlay_ui.json"
 _INDEX_PATH = _ROOT / "index.csv"
 _INDEX_FIELDS = ("track_name", "artist_name", "album_name", "duration_ms", "sync", "preference", "file")
-_API_URL_PATH = Path(__file__).resolve().parent / "lyric_api_url.txt"
-_URI_PATH = Path(__file__).resolve().parent / ".spotify" / "mongodb_uri.txt"
+_URI_PATH = user_data_dir() / ".spotify" / "mongodb_uri.txt"
 _ENV_PATH = Path(__file__).resolve().parent / "atlas-credentials.env"
 _LOCK = threading.Lock()
 _mongo = None
@@ -27,6 +28,7 @@ _mongo_disabled_until = 0.0
 _mongo_reported = False
 _HOLD: dict[str, list[dict]] = {}
 _announced: set[tuple[str, str, str]] = set()
+_feedback = ""
 
 
 def song_key(track_name: str, artist_name: str, album_name: str, duration_ms: int) -> str:
@@ -170,14 +172,23 @@ def announce(query: dict, place: str, kind: str) -> None:
     Postcondition:
         One line is written to the terminal, or nothing when this pair was already printed.
     """
+    global _feedback
     token = (song_key_of(query), place, kind)
+    title = query.get("track_name") or "Unknown title"
+    artist = query.get("artist_name") or "Unknown artist"
+    line = f"{title} — {artist}: {place}, {kind}"
     with _LOCK:
         if token in _announced:
             return
         _announced.add(token)
-    title = query.get("track_name") or "Unknown title"
-    artist = query.get("artist_name") or "Unknown artist"
-    print(f"{title} — {artist}: {place}, {kind}", flush=True)
+        _feedback = line
+    print(line, flush=True)
+
+
+def feedback_line() -> str:
+    """Return the latest lyric-source line for the overlay corner."""
+    with _LOCK:
+        return _feedback
 
 
 def put_miss(query: dict) -> None:
@@ -381,19 +392,35 @@ def _api_base() -> str:
 
     env = os.environ.get("LYRIC_API_URL", "").strip()
     if env:
-        return env.rstrip("/")
-    path = _API_URL_PATH
+        return _public_api_url(env)
+    candidates = [user_data_dir() / "lyric_api_url.txt", resource_dir() / "lyric_api_url.txt"]
     if getattr(sys, "frozen", False):
-        path = Path(sys.executable).resolve().parent / "lyric_api_url.txt"
-    if not path.exists():
+        candidates.insert(0, Path(sys.executable).resolve().parent / "lyric_api_url.txt")
+    seen: set[Path] = set()
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        if not path.exists():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        url = _public_api_url(text)
+        if url:
+            return url
+    return ""
+
+
+def _public_api_url(text: str) -> str:
+    """Return a public lyric-server URL, or empty when it points at this PC."""
+    url = text.strip().rstrip("/")
+    if url.startswith("http://127.0.0.1") or url.startswith("http://localhost"):
         return ""
-    try:
-        text = path.read_text(encoding="utf-8").strip().rstrip("/")
-    except OSError:
-        return ""
-    if text.startswith("http://127.0.0.1") or text.startswith("http://localhost"):
-        return ""
-    return text
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return ""
 
 
 def _api(method: str, path: str, payload: dict | None = None) -> tuple[int, dict | None]:

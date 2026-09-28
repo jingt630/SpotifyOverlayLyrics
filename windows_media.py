@@ -18,6 +18,10 @@ import time
 from datetime import datetime, timezone
 
 from lrclib_client import media_choice_key
+from winsdk.windows.media.control import (
+    GlobalSystemMediaTransportControlsSessionManager,
+    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+)
 
 # How often to read the session when no event has arrived.
 WINDOWS_POLL_SECONDS = 1.0
@@ -151,10 +155,6 @@ class WindowsPlayback:
 
     async def _main(self) -> None:
         """Subscribe to session changes and read about once a second."""
-        from winrt.windows.media.control import (
-            GlobalSystemMediaTransportControlsSessionManager,
-        )
-
         self._refresh_lock = asyncio.Lock()
         self._manager = await GlobalSystemMediaTransportControlsSessionManager.request_async()
         wake = lambda *_args: self._schedule_refresh()
@@ -264,10 +264,7 @@ class WindowsPlayback:
 
 def _spotify_session(manager):
     """Return the Spotify desktop session, preferring one that is playing."""
-    from winrt.windows.media.control import (
-        GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
-    )
-
+    Status = GlobalSystemMediaTransportControlsSessionPlaybackStatus
     if manager is None:
         return None
     found = []
@@ -285,10 +282,7 @@ def _spotify_session(manager):
 
 async def _currently_playing(session) -> dict | None:
     """Copy the session into a currently-playing body, or None when nothing is playing."""
-    from winrt.windows.media.control import (
-        GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
-    )
-
+    Status = GlobalSystemMediaTransportControlsSessionPlaybackStatus
     info = session.get_playback_info()
     status = info.playback_status
     if status in (Status.CLOSED, Status.STOPPED):

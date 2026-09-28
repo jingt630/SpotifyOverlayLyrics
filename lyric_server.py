@@ -92,7 +92,13 @@ class Handler(BaseHTTPRequestHandler):
         if document is None:
             self._send(400, {"error": "song document was rejected"})
             return
-        saved, created = _upsert(document)
+        try:
+            saved, created = _upsert(document)
+        except Exception as exc:
+            _writes.pop(address, None)
+            print(f"MongoDB rejected {document.get('track_name') or 'a song'}: {exc}", flush=True)
+            self._send(500, {"error": "database rejected the song"})
+            return
         if not saved:
             self._send(200, {"ok": True, "replaced": False})
             return
@@ -133,6 +139,7 @@ def _songs():
     client.admin.command("ping")
     collection = client["lyrics"]["songs"]
     collection.create_index("key", unique=True)
+    _ensure_validator(collection)
     _collection = collection
     return collection
 
@@ -193,6 +200,73 @@ def _valid_song(payload: object) -> dict | None:
         return None
     query = {"track_name": track, "artist_name": artist, "album_name": album, "duration_ms": duration}
     return _stored_fields({**query, "sync": sync, "lines": lines}, song_key_of(query))
+
+
+def _ensure_validator(collection) -> None:
+    """Replace the songs validator with one the lyric documents can pass.
+
+    Purpose:
+        A validator stored without $jsonSchema compares the song to the
+        schema text and rejects every save. This installs a schema that
+        accepts the catalog fields, including 32-bit and 64-bit timestamps.
+
+    Parameters:
+        collection: The open songs collection.
+
+    Returns:
+        None.
+    """
+    number = {"bsonType": ["int", "long", "double"]}
+    text = {"bsonType": "string"}
+    word = {
+        "bsonType": "object",
+        "required": ["text"],
+        "properties": {
+            "text": text,
+            "text_s": text,
+            "text_t": text,
+            "start_ms": number,
+            "duration_ms": number,
+        },
+    }
+    line = {
+        "bsonType": "object",
+        "required": ["start_ms", "text"],
+        "properties": {
+            "start_ms": number,
+            "duration_ms": number,
+            "text": text,
+            "text_s": text,
+            "text_t": text,
+            "words": {"bsonType": "array", "items": word},
+        },
+    }
+    schema = {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["key", "track_name", "artist_name", "album_name", "duration_ms", "sync", "lines"],
+            "properties": {
+                "_id": {"bsonType": "objectId"},
+                "key": text,
+                "track_name": text,
+                "artist_name": text,
+                "album_name": text,
+                "duration_ms": number,
+                "sync": number,
+                "lines": {"bsonType": "array", "items": line},
+            },
+        }
+    }
+    try:
+        collection.database.command(
+            "collMod",
+            collection.name,
+            validator=schema,
+            validationLevel="moderate",
+            validationAction="error",
+        )
+    except Exception as exc:
+        print(f"Could not update the songs validator: {exc}", flush=True)
 
 
 def _valid_lines(lines: list) -> bool:

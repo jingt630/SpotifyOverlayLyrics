@@ -29,10 +29,12 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import QApplication, QWidget
 
+from app_paths import resource_dir, user_data_dir
 from lrclib_client import LyricCandidate
 
-_SETTINGS_PATH = Path(__file__).resolve().parent / ".spotify" / "overlay_ui.json"
-_TEXT_DIR = Path(__file__).resolve().parent / "settings_text"
+_SETTINGS_PATH = user_data_dir() / ".spotify" / "overlay_ui.json"
+_TEXT_DIR = resource_dir() / "settings_text"
+_FEEDBACK_SIZE = 15
 _SCROLL_W = 10
 _FONT_MIN = 16
 _FONT_MAX = 48
@@ -203,6 +205,7 @@ class LyricOverlay(QWidget):
         self._status_key = ""
         self._status_detail = ""
         self._notice_key = ""
+        self._feedback = ""
         self._mode = "lyrics"
         self._words: tuple[tuple[str, float], ...] = ()
         self._word_next = ""
@@ -268,10 +271,22 @@ class LyricOverlay(QWidget):
         self.update()
 
     def set_notice(self, key: str) -> None:
-        """Show a short playback message, then clear it."""
+        """Show a short playback message in the corner, then clear it."""
         self._notice_key = key
         self._notice_timer.start(4000)
-        self._relayout("top")
+        self._relayout("bottom")
+
+    def set_feedback(self, text: str) -> None:
+        """Show a lookup line at the bottom left. Lyrics stay in the main area.
+
+        Parameters:
+            text (str): One line, such as where the lyric was found. Empty hides it.
+        """
+        text = " ".join(text.split())
+        if text == self._feedback:
+            return
+        self._feedback = text
+        self._relayout("bottom")
 
     def set_status(self, key: str, detail: str = "") -> None:
         """Replace the lyrics with one translated status line.
@@ -284,6 +299,7 @@ class LyricOverlay(QWidget):
         self._mode = "status"
         self._status_key = key
         self._status_detail = detail
+        self._feedback = self._status_sentence()
         self._choice_rows = []
         self._on_pick = None
         self.left = ""
@@ -418,8 +434,7 @@ class LyricOverlay(QWidget):
             self._draw_lyrics(painter, body)
         if self._settings_open:
             self._draw_settings(painter)
-        if self._notice_key:
-            self._draw_notice(painter)
+        self._draw_footer(painter)
         painter.end()
 
     def enterEvent(self, event) -> None:  # noqa: N802 — Qt override name
@@ -683,8 +698,7 @@ class LyricOverlay(QWidget):
         text_h = self._content_size()[1]
         bar = _BAR_H if (self._chrome or self._settings_open) else 0
         settings = self._settings_view_height() if self._settings_open else 0
-        notice = 28 if self._notice_key else 0
-        height = int(text_h + _PAD_Y * 2 + bar + settings + notice)
+        height = int(text_h + _PAD_Y * 2 + bar + settings + self._footer_height())
         height = min(max(height, 80), self._max_window_height())
         self.resize(self._fixed_width(), height)
 
@@ -746,8 +760,7 @@ class LyricOverlay(QWidget):
         """Return the rectangle under the bar where lyrics are drawn."""
         top = _BAR_H if (self._chrome or self._settings_open) else 0
         bottom = self._settings_view_height() if self._settings_open else 0
-        if self._notice_key:
-            bottom += 28
+        bottom += self._footer_height()
         return QRectF(0, top, self.width(), self.height() - top - bottom)
 
     def _settings_view_height(self) -> int:
@@ -766,7 +779,7 @@ class LyricOverlay(QWidget):
 
     def _settings_view_rect(self) -> QRectF:
         """Return the on-screen rectangle of the settings panel."""
-        top = self.height() - self._settings_view_height() - (28 if self._notice_key else 0)
+        top = self.height() - self._settings_view_height() - self._footer_height()
         return QRectF(0, top, self.width(), self._settings_view_height())
 
     def _lyric_font(self) -> QFont:
@@ -1316,12 +1329,37 @@ class LyricOverlay(QWidget):
             y += row_h
         painter.restore()
 
-    def _draw_notice(self, painter: QPainter) -> None:
-        """Draw the playback message along the bottom."""
-        painter.setFont(_ui_font(11))
-        rect = QRectF(_PAD_X, self.height() - 26, self.width() - _PAD_X * 2, 20)
-        painter.setPen(self._ink())
-        painter.drawText(rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self.text(self._notice_key))
+    def _footer_height(self) -> int:
+        """Return the corner-line height, or 0 when there is nothing to say."""
+        if not self._feedback and not self._notice_key:
+            return 0
+        return QFontMetrics(_ui_font(_FEEDBACK_SIZE)).height() + 8
+
+    def _footer_text(self) -> str:
+        """Return the corner line. A playback notice replaces the lookup line."""
+        if self._notice_key:
+            return self.text(self._notice_key)
+        return self._feedback
+
+    def _draw_footer(self, painter: QPainter) -> None:
+        """Draw the lookup line at the bottom left in a small face."""
+        text = self._footer_text()
+        if not text:
+            return
+        font = _ui_font(_FEEDBACK_SIZE)
+        painter.setFont(font)
+        height = self._footer_height()
+        rect = QRectF(12, self.height() - height, max(1, self.width() - 24), height)
+        metrics = QFontMetrics(font)
+        shown = metrics.elidedText(text, Qt.TextElideMode.ElideRight, int(rect.width()))
+        baseline = rect.y() + metrics.ascent() + (rect.height() - metrics.height()) / 2
+        path = QPainterPath()
+        path.addText(rect.x(), baseline, font, shown)
+        outline = QPen(QColor(0, 0, 0), 2.0)
+        outline.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        outline.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.strokePath(path, outline)
+        painter.fillPath(path, QColor(255, 255, 255))
 
     def _hit_at(self, pos: QPointF) -> tuple[str, str | int] | None:
         """Return the control under pos."""

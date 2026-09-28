@@ -144,7 +144,7 @@ class OverlayFollow(QObject):
         self.lyrics = lyrics
         self.netease = NeteaseLookup()
         self._netease_announced: tuple | None = None
-        self._netease_hold_until = 0.0
+        self._seen_feedback = ""
         self._seeked = False
         self.window = window
         self.anchor_progress = 0
@@ -174,6 +174,7 @@ class OverlayFollow(QObject):
             progress = min(progress, duration)
         self.window.set_playing(self.playing)
         self.netease.consider(now, self._seeked)
+        self._sync_feedback()
         self._seeked = False
         phase = self.netease.phase()
         song_key = self.netease.song_key()
@@ -199,20 +200,19 @@ class OverlayFollow(QObject):
                 self._shown = "netease_search"
                 self.window.set_status("netease_search")
             return
-        if phase in ("saved", "none", "error"):
+        if phase in ("none", "error"):
             token = (song_key, phase, self.netease.reason_key())
             if self._netease_announced != token:
                 self._netease_announced = token
-                hold = 2.0 if phase == "saved" else 4.0
-                self._netease_hold_until = time.monotonic() + hold
-                status = {"saved": "netease_saved", "none": "netease_none", "error": "netease_error"}[phase]
-                if phase != "saved" and self.netease.reason_key():
+                status = "netease_error" if phase == "error" else "netease_none"
+                if self.netease.reason_key():
                     status = self.netease.reason_key()
-                self._shown = ("netease", song_key, status)
-                self.window.set_status(status, self.netease.detail())
-                return
-            if time.monotonic() < self._netease_hold_until:
-                return
+                sentence = self.window.text(status)
+                detail = self.netease.detail().strip()
+                if detail:
+                    sentence = f"{sentence} {detail}"
+                self.window.set_feedback(sentence)
+                self._seen_feedback = lyric_catalog.feedback_line()
         if phase in ("saved", "words"):
             frame = self.netease.frame_at(progress, self.window.chinese_script())
             if frame is not None:
@@ -223,6 +223,14 @@ class OverlayFollow(QObject):
                 return
         self._set_paint_interval(False)
         self._show_lrclib(now, progress)
+
+    def _sync_feedback(self) -> None:
+        """Copy the latest lyric-source line into the corner."""
+        line = lyric_catalog.feedback_line()
+        if not line or line == self._seen_feedback:
+            return
+        self._seen_feedback = line
+        self.window.set_feedback(line)
 
     def _show_lrclib(self, now: dict | None, progress: int) -> None:
         """Draw LRCLIB lines, or NetEase line lyrics when LRCLIB has none."""

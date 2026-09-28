@@ -36,8 +36,10 @@ from lrclib_client import (
     spotify_track_query,
 )
 
+from app_paths import user_data_dir
+
 _ROOT = Path(__file__).resolve().parent
-_OUT_DIR = _ROOT / ".netease"
+_OUT_DIR = user_data_dir() / ".netease"
 _CHOICES_PATH = _OUT_DIR / "netease_choices.json"
 _CATALOG_PATH = _OUT_DIR / "netease_catalog.csv"
 _CATALOG_FIELDS = ("track_name", "artist_name", "album_name", "duration", "netease_id")
