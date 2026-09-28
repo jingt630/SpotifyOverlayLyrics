@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: lyric-catalog
+    runtime: python
+    buildCommand: pip install -r requirements-server.txt
+    startCommand: python lyric_server.py
+    envVars:
+      - key: MONGODB_URI
+        sync: false

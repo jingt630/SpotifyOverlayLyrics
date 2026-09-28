@@ -1,7 +1,7 @@
-"""Local lyric catalog, with an optional MongoDB copy for songs this machine has not seen.
+"""Local lyric catalog. Shared songs are read and written through the lyric server.
 
-Playback reads the local file. MongoDB is asked once, only when that file is
-missing. A user-picked version is stored locally and is not uploaded.
+Playback reads a personal file in .localLyric first. The server is asked only
+when that file is missing. The MongoDB password stays on the server.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ _ROOT = Path(__file__).resolve().parent / ".localLyric"
 _UI_PATH = Path(__file__).resolve().parent / ".spotify" / "overlay_ui.json"
 _INDEX_PATH = _ROOT / "index.csv"
 _INDEX_FIELDS = ("track_name", "artist_name", "album_name", "duration_ms", "sync", "preference", "file")
+_API_URL_PATH = Path(__file__).resolve().parent / "lyric_api_url.txt"
 _URI_PATH = Path(__file__).resolve().parent / ".spotify" / "mongodb_uri.txt"
 _ENV_PATH = Path(__file__).resolve().parent / "atlas-credentials.env"
 _LOCK = threading.Lock()
@@ -373,109 +374,97 @@ def _env_value(path: Path, name: str) -> str:
     return ""
 
 
-def _collection():
-    """Return the songs collection, or None when MongoDB is not configured or not reachable."""
-    global _mongo, _mongo_disabled_until
-    if _mongo is False:
-        return None
+def _api_base() -> str:
+    """Return the lyric server URL. A packaged app reads the file beside the exe."""
+    import os
+    import sys
+
+    env = os.environ.get("LYRIC_API_URL", "").strip()
+    if env:
+        return env.rstrip("/")
+    path = _API_URL_PATH
+    if getattr(sys, "frozen", False):
+        path = Path(sys.executable).resolve().parent / "lyric_api_url.txt"
+    if not path.exists():
+        return ""
+    try:
+        text = path.read_text(encoding="utf-8").strip().rstrip("/")
+    except OSError:
+        return ""
+    if text.startswith("http://127.0.0.1") or text.startswith("http://localhost"):
+        return ""
+    return text
+
+
+def _api(method: str, path: str, payload: dict | None = None) -> tuple[int, dict | None]:
+    """Call the lyric server. Connection failures pause further calls for one minute."""
+    import urllib.error
+    import urllib.request
+
+    base = _api_base()
+    if not base:
+        _report("Lyric catalog did not connect. Put the public https address in lyric_api_url.txt.")
+        return 0, None
+    global _mongo_disabled_until
     if time.monotonic() < _mongo_disabled_until:
-        return None
-    if _mongo is not None:
-        return _mongo
-    uri = _uri()
-    if not uri:
-        _mongo = False
-        _report("MongoDB is not configured. Lyrics stay on this computer.")
-        return None
+        return 0, None
+    data = None
+    headers = {}
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
     try:
-        from pymongo import MongoClient
-    except ImportError:
-        _mongo = False
-        _report("MongoDB client pymongo is not installed. Lyrics stay on this computer.")
-        return None
-    try:
-        client = MongoClient(uri, serverSelectionTimeoutMS=1500, connectTimeoutMS=1500)
-        client.admin.command("ping")
-        collection = client["lyrics"]["songs"]
-        collection.create_index("key", unique=True)
-    except Exception as exc:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            raw = response.read()
+            body = json.loads(raw.decode("utf-8")) if raw else {}
+            _report("Lyric catalog connected.")
+            return response.status, body if isinstance(body, dict) else None
+    except urllib.error.HTTPError as exc:
+        _report("Lyric catalog connected.")
+        try:
+            body = json.loads(exc.read().decode("utf-8"))
+        except (OSError, json.JSONDecodeError):
+            body = None
+        return exc.code, body if isinstance(body, dict) else None
+    except (OSError, json.JSONDecodeError, TimeoutError) as exc:
         _mongo_disabled_until = time.monotonic() + 60
-        _report(f"MongoDB did not connect ({exc.__class__.__name__}). Lyrics stay on this computer for now.")
-        return None
-    _mongo = collection
-    _report("MongoDB connected. Database lyrics, collection songs.")
-    return collection
+        _report(f"Lyric catalog did not connect ({exc.__class__.__name__}). Lyrics stay on this computer for now.")
+        return 0, None
 
 
 def _mongo_find(query: dict) -> dict | None:
-    """Return one song document, collapsing copies that differ only by duration.
+    """Return one song from the lyric server."""
+    import urllib.parse
 
-    Purpose:
-        A Windows session can report two lengths for one play. Those used to
-        become two catalog keys. Title, artist, and album are one song.
-
-    Parameters:
-        query (dict): Song names and duration.
-
-    Returns:
-        dict | None: The kept document, without MongoDB's id. None when the
-        song is absent or MongoDB cannot be reached.
-
-    Precondition:
-        query contains the song name fields.
-
-    Postcondition:
-        Extra documents for the same names are deleted. The kept document
-        uses the duration-free key.
-    """
-    collection = _collection()
-    if collection is None:
-        return None
-    key = song_key_of(query)
-    names = _name_filter(query)
-    try:
-        docs = list(collection.find({"$or": [{"key": key}, names]}))
-    except Exception:
-        return None
-    if not docs:
-        return None
-    duration = int(query.get("duration_ms") or 0)
-    docs.sort(key=lambda doc: _doc_rank(doc, duration))
-    keep = docs[0]
-    extras = [doc["_id"] for doc in docs[1:]]
-    payload = _stored_fields(keep, key)
-    try:
-        if keep.get("key") != key:
-            collection.replace_one({"_id": keep["_id"]}, payload)
-        if extras:
-            collection.delete_many({"_id": {"$in": extras}})
-    except Exception:
-        pass
-    return payload
+    params = urllib.parse.urlencode(
+        {
+            "track_name": query.get("track_name") or "",
+            "artist_name": query.get("artist_name") or "",
+            "album_name": query.get("album_name") or "",
+            "duration_ms": int(query.get("duration_ms") or 0),
+        }
+    )
+    status, body = _api("GET", f"/songs?{params}")
+    if status == 200 and isinstance(body, dict) and body.get("key"):
+        return body
+    return None
 
 
 def _mongo_upsert(document: dict) -> None:
-    """Insert or replace the shared document. Word sync is left in place."""
-    collection = _collection()
-    if collection is None:
-        return
+    """Send one shared song to the lyric server."""
     payload = _stored_fields(document, str(document["key"]))
-    names = _name_filter(payload)
-    try:
-        existing = list(collection.find(names, {"sync": 1, "key": 1}))
-        if any(int(doc.get("sync") or -1) == 1 for doc in existing) and payload["sync"] != 1:
-            return
-        current = next((doc for doc in existing if doc.get("key") == payload["key"]), None)
-        collection.replace_one({"key": payload["key"]}, payload, upsert=True)
-        collection.delete_many({**names, "key": {"$ne": payload["key"]}})
-        if current is None:
-            label = {1: "word sync", 0: "line sync", -1: "no synced lyric"}.get(int(payload["sync"]), "lyric")
-            title = payload.get("track_name") or "Unknown title"
-            artist = payload.get("artist_name") or "Unknown artist"
-            _report(f"MongoDB saved {title} — {artist} ({label}).")
-    except Exception as exc:
-        _report(f"MongoDB did not save {payload.get('track_name') or 'this song'} ({exc.__class__.__name__}).")
+    status, body = _api("PUT", "/songs", payload)
+    if status == 429:
+        _report(f"Lyric catalog skipped a save for {payload.get('track_name') or 'this song'} (one write per minute).")
         return
+    if status == 200 and isinstance(body, dict) and body.get("created"):
+        label = {1: "word sync", 0: "line sync", -1: "no synced lyric"}.get(int(payload["sync"]), "lyric")
+        title = payload.get("track_name") or "Unknown title"
+        artist = payload.get("artist_name") or "Unknown artist"
+        _report(f"Lyric catalog saved {title} — {artist} ({label}).")
+    elif status not in (0, 200):
+        _report(f"Lyric catalog did not save {payload.get('track_name') or 'this song'}.")
 
 
 def _name_filter(query: dict) -> dict:
@@ -516,7 +505,7 @@ def _doc_rank(document: dict, duration_ms: int) -> tuple[int, int]:
 def _report(message: str) -> None:
     """Print one catalog line. Connection success and failure are each printed once."""
     global _mongo_reported
-    if message.startswith("MongoDB connected") or message.startswith("MongoDB is not") or message.startswith("MongoDB client") or message.startswith("MongoDB did not connect"):
+    if message.startswith("Lyric catalog connected") or message.startswith("Lyric catalog did not connect"):
         if _mongo_reported:
             return
         _mongo_reported = True
