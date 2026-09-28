@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,6 +28,7 @@ from lrclib_client import (
     _artist_rank,
     _title_rank,
     format_clock,
+    normalize_name,
     spotify_track_query,
 )
 
@@ -35,6 +37,12 @@ _OUT_DIR = _ROOT / ".netease"
 _CHOICES_PATH = _OUT_DIR / "netease_choices.json"
 _CATALOG_PATH = _OUT_DIR / "netease_catalog.csv"
 _CATALOG_FIELDS = ("track_name", "artist_name", "album_name", "duration", "netease_id")
+_ALIAS_PATH = _OUT_DIR / "name_aliases.json"
+_ALIAS_CSV_PATH = _OUT_DIR / "name_aliases.csv"
+_ALIAS_FIELDS = ("artist_name", "track_name", "chinese_artists", "chinese_titles")
+_MB_ARTIST = "https://musicbrainz.org/ws/2/artist/"
+_MB_RECORDING = "https://musicbrainz.org/ws/2/recording/"
+_MB_AGENT = "SpotifyOverlayLyrics/1.0 (local lyrics overlay)"
 _SEARCH_URL = "https://music.163.com/api/cloudsearch/pc"
 _LYRIC_URL = "https://interface3.music.163.com/eapi/song/lyric/v1"
 _EAPI_KEY = b"e82ckenh8dichen8"
@@ -92,6 +100,284 @@ def search_songs(track_name: str, artist_name: str) -> list[dict]:
             }
         )
     return rows
+
+
+def _has_han(text: str) -> bool:
+    """Return True when the text contains a Chinese or Japanese kanji character."""
+    return any("\u4e00" <= char <= "\u9fff" for char in text)
+
+
+def _han_names(values: list[object]) -> list[str]:
+    """Return unique Chinese names, including the han part of a mixed name."""
+    found: list[str] = []
+    for value in values:
+        name = str(value or "").strip()
+        for span in re.findall(r"[\u4e00-\u9fff]{2,}", name):
+            if span not in found:
+                found.append(span)
+    return found
+
+
+def _mb_json(url: str) -> dict | None:
+    """Return one MusicBrainz JSON object.
+
+    Purpose:
+        Read Chinese artist and title aliases. MusicBrainz asks for a
+        descriptive User-Agent and about one request per second.
+
+    Parameters:
+        url (str): A MusicBrainz ws/2 URL.
+
+    Returns:
+        dict | None: The parsed body. None when the request fails, so a
+        network miss is not saved as "this song has no Chinese name".
+
+    Precondition:
+        url is absolute.
+
+    Postcondition:
+        No file is written.
+    """
+    request = urllib.request.Request(url, headers={"User-Agent": _MB_AGENT, "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _cached_aliases(track_name: str, artist_name: str) -> tuple[list[str], list[str]]:
+    """Return saved extra titles and artist names for this song."""
+    if not _ALIAS_PATH.exists():
+        return [], []
+    try:
+        raw = json.loads(_ALIAS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return [], []
+    row = raw.get(f"{artist_name.casefold()}\u001f{track_name.casefold()}") if isinstance(raw, dict) else None
+    if not isinstance(row, dict):
+        return [], []
+    titles = row.get("titles") if isinstance(row.get("titles"), list) else []
+    artists = row.get("artists") if isinstance(row.get("artists"), list) else []
+    return [str(item) for item in titles], [str(item) for item in artists]
+
+
+def _both_scripts(names: list[str]) -> list[str]:
+    """Return each name in simplified and traditional Chinese."""
+    try:
+        import zhconv
+    except ImportError:
+        return names
+    found: list[str] = []
+    for name in names:
+        for variant in (zhconv.convert(name, "zh-cn"), zhconv.convert(name, "zh-tw"), name):
+            if variant not in found:
+                found.append(variant)
+    return found
+
+
+def _store_aliases(track_name: str, artist_name: str, titles: list[str], artists: list[str]) -> None:
+    """Remember the Chinese names looked up for this song and refresh the spreadsheet."""
+    raw: dict = {}
+    if _ALIAS_PATH.exists():
+        try:
+            loaded = json.loads(_ALIAS_PATH.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                raw = loaded
+        except (OSError, json.JSONDecodeError):
+            raw = {}
+    raw[f"{artist_name.casefold()}\u001f{track_name.casefold()}"] = {"titles": titles, "artists": artists}
+    _OUT_DIR.mkdir(parents=True, exist_ok=True)
+    _ALIAS_PATH.write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+    with _ALIAS_CSV_PATH.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=_ALIAS_FIELDS)
+        writer.writeheader()
+        for key, row in raw.items():
+            artist, track = (key.split("\u001f", 1) + [""])[:2]
+            if not isinstance(row, dict):
+                continue
+            writer.writerow(
+                {
+                    "artist_name": artist,
+                    "track_name": track,
+                    "chinese_artists": " | ".join(str(item) for item in row.get("artists") or []),
+                    "chinese_titles": " | ".join(str(item) for item in row.get("titles") or []),
+                }
+            )
+
+
+def chinese_search_names(track_name: str, artist_name: str) -> tuple[list[str], list[str]]:
+    """Return extra Chinese titles and artist names to search on NetEase.
+
+    Purpose:
+        Spotify often shows an English artist, while NetEase files the same
+        person under a Chinese name. A Chinese song can also be titled in
+        English on Spotify. The extra names are pooled with the original
+        search.
+
+    Parameters:
+        track_name (str): Playback title.
+        artist_name (str): Playback artist.
+
+    Returns:
+        tuple[list[str], list[str]]: Extra titles, then extra artist names.
+        Both lists are empty when the playback names are already Chinese.
+
+    Precondition:
+        Both arguments are strings.
+
+    Postcondition:
+        A successful lookup is cached under .netease/name_aliases.json.
+    """
+    if _has_han(track_name) and _has_han(artist_name):
+        return [], []
+    cached_titles, cached_artists = _cached_aliases(track_name, artist_name)
+    if _alias_key_saved(track_name, artist_name):
+        return cached_titles, cached_artists
+    artist_names = _mb_artist_names(artist_name)
+    if artist_names is None:
+        return [], []
+    titles = _mb_title_names(track_name, artist_name, artist_names) if not _has_han(track_name) else []
+    if titles is None:
+        return [], []
+    titles = _both_scripts([name for name in titles if name.casefold() != track_name.casefold()])[:6]
+    artist_names = _both_scripts(
+        [name for name in artist_names if name.casefold() != artist_name.casefold()]
+    )[:6]
+    _store_aliases(track_name, artist_name, titles, artist_names)
+    return titles, artist_names
+
+
+def _alias_hit(wanted: str, detail: dict) -> bool:
+    """Return True when this artist record is the playback artist."""
+    labels = [detail.get("name"), detail.get("sort-name")]
+    labels.extend(alias.get("name") for alias in (detail.get("aliases") or []))
+    for label in labels:
+        name = normalize_name(str(label or ""))
+        if name == wanted:
+            return True
+        if _has_han(str(detail.get("name") or "")) and name.split()[:1] == [wanted]:
+            return True
+    return False
+
+
+def _mb_artist_names(artist_name: str) -> list[str] | None:
+    """Return Chinese names for an artist, or None when MusicBrainz cannot be reached."""
+    query = urllib.parse.urlencode(
+        {"query": f'artist:"{artist_name}" OR alias:"{artist_name}"', "fmt": "json", "limit": 8}
+    )
+    listing = _mb_json(f"{_MB_ARTIST}?{query}")
+    if listing is None:
+        return None
+    wanted = normalize_name(artist_name)
+    matched: list[dict] = []
+    checked = 0
+    for artist in listing.get("artists") or []:
+        if int(artist.get("score") or 0) < 60 or not artist.get("id"):
+            continue
+        if checked >= 4:
+            break
+        checked += 1
+        time.sleep(1.1)
+        detail = _mb_json(f"{_MB_ARTIST}{artist['id']}?inc=aliases&fmt=json")
+        if detail is None:
+            return None
+        if not _alias_hit(wanted, detail):
+            continue
+        names = _han_names([detail.get("name"), detail.get("sort-name")])
+        if not names:
+            aliases = [alias.get("name") for alias in (detail.get("aliases") or [])]
+            names = _han_names(aliases)
+        if names:
+            return names
+    return []
+
+
+def _mb_title_names(track_name: str, artist_name: str, artist_aliases: list[str] | None = None) -> list[str] | None:
+    """Return Chinese recording titles, or None when MusicBrainz cannot be reached."""
+    queries = []
+    for extra in (artist_aliases or [])[:2]:
+        queries.append(f'alias:"{track_name}" AND artist:"{extra}"')
+        queries.append(f'recording:"{track_name}" AND artist:"{extra}"')
+    queries.append(f'recording:"{track_name}" AND artist:"{artist_name}"')
+    titles: list[str] = []
+    for text in queries[:3]:
+        time.sleep(1.1)
+        query = urllib.parse.urlencode({"query": text, "fmt": "json", "limit": 5})
+        listing = _mb_json(f"{_MB_RECORDING}?{query}")
+        if listing is None:
+            return None
+        for recording in (listing.get("recordings") or [])[:2]:
+            if not recording.get("id"):
+                continue
+            time.sleep(1.1)
+            detail = _mb_json(f"{_MB_RECORDING}{recording['id']}?inc=aliases&fmt=json")
+            if detail is None:
+                return None
+            aliases = [alias.get("name") for alias in (detail.get("aliases") or [])]
+            titles.extend(_han_names([detail.get("title"), *aliases]))
+        if titles:
+            break
+    return titles
+
+
+def _alias_key_saved(track_name: str, artist_name: str) -> bool:
+    """Return True when this song was already looked up, even with no Chinese name."""
+    if not _ALIAS_PATH.exists():
+        return False
+    try:
+        raw = json.loads(_ALIAS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return isinstance(raw, dict) and f"{artist_name.casefold()}\u001f{track_name.casefold()}" in raw
+
+
+def collect_songs(track_name: str, artist_name: str, titles: list[str], artists: list[str]) -> list[dict]:
+    """Search NetEase once per title and artist pair and pool the hits.
+
+    Purpose:
+        A Chinese catalog name and the English playback name should both
+        be able to surface the same song before filtering.
+
+    Parameters:
+        track_name (str): Playback title.
+        artist_name (str): Playback artist.
+        titles (list[str]): Extra titles, such as a Chinese song name.
+        artists (list[str]): Extra artist names, such as a Chinese stage name.
+
+    Returns:
+        list[dict]: Unique songs from every search that succeeded.
+
+    Precondition:
+        track_name is not empty.
+
+    Postcondition:
+        One failed search does not discard hits from the others. ValueError
+        is raised only when every search fails.
+    """
+    pairs: list[tuple[str, str]] = [(track_name, artist_name)]
+    for title in titles:
+        pairs.append((title, artist_name))
+    for artist in artists:
+        pairs.append((track_name, artist))
+        for title in titles:
+            pairs.append((title, artist))
+    seen: dict[int, dict] = {}
+    failures = 0
+    attempted = 0
+    for title, artist in dict.fromkeys(pairs):
+        attempted += 1
+        try:
+            rows = search_songs(title, artist)
+        except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
+            failures += 1
+            continue
+        for row in rows:
+            seen[int(row["id"])] = row
+    if attempted and failures == attempted:
+        raise OSError("NetEase search failed")
+    return list(seen.values())
 
 
 def _eapi_body(song_id: int) -> bytes:
@@ -309,16 +595,32 @@ def _lrclib_record(song: dict) -> dict:
     }
 
 
-def rank_songs(songs: list[dict], query: dict) -> list[dict]:
+def _best_name_rank(rank, record: dict, names: list[str]) -> int | None:
+    """Return the best rank against any of the names, or None when none match."""
+    found = [value for name in names if (value := rank(record, name)) is not None]
+    if not found:
+        return None
+    return min(found)
+
+
+def rank_songs(
+    songs: list[dict],
+    query: dict,
+    titles: list[str] | None = None,
+    artists: list[str] | None = None,
+) -> list[dict]:
     """Return NetEase songs that match the title and artist, closest first.
 
     Purpose:
         Use the same title, artist, album, and duration ordering as the
-        LRCLIB auto-pick. Song length is the stored duration.
+        LRCLIB auto-pick. Extra Chinese titles and artist names count as
+        the same song.
 
     Parameters:
         songs (list[dict]): Rows from search_songs.
         query (dict): spotify_track_query result.
+        titles (list[str] | None): Extra titles that should also match.
+        artists (list[str] | None): Extra artist names that should also match.
 
     Returns:
         list[dict]: Matching songs, best first. Each row gains delta_ms.
@@ -327,13 +629,16 @@ def rank_songs(songs: list[dict], query: dict) -> list[dict]:
         query contains track_name, artist_name, album_name, and duration_ms.
 
     Postcondition:
-        songs is unchanged. A row is included only when the title and artist match.
+        songs is unchanged. A row is included only when one title and one
+        artist name match.
     """
+    title_names = [query["track_name"], *(titles or [])]
+    artist_names = [query["artist_name"], *(artists or [])]
     ranked: list[tuple[int, int, int, int, dict]] = []
     for song in songs:
         record = _lrclib_record(song)
-        title = _title_rank(record, query["track_name"])
-        artist = _artist_rank(record, query["artist_name"])
+        title = _best_name_rank(_title_rank, record, title_names)
+        artist = _best_name_rank(_artist_rank, record, artist_names)
         if title is None or artist is None:
             continue
         album = _album_rank(record, query["album_name"])
@@ -765,7 +1070,9 @@ class NeteaseLookup:
             self._finish(key, "words", query, "", lines=saved_lines)
             return
         try:
-            ranked = rank_songs(search_songs(query["track_name"], query["artist_name"]), query)
+            extra_titles, extra_artists = chinese_search_names(query["track_name"], query["artist_name"])
+            pooled = collect_songs(query["track_name"], query["artist_name"], extra_titles, extra_artists)
+            ranked = rank_songs(pooled, query, extra_titles, extra_artists)
         except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
             self._finish(key, "error", query)
             return
