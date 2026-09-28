@@ -18,10 +18,17 @@ import time
 from datetime import datetime, timezone
 
 from lrclib_client import media_choice_key
-from winsdk.windows.media.control import (
-    GlobalSystemMediaTransportControlsSessionManager,
-    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
-)
+
+try:
+    from winrt.windows.media.control import (
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+    )
+except ImportError:
+    from winsdk.windows.media.control import (
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+    )
 
 # How often to read the session when no event has arrived.
 WINDOWS_POLL_SECONDS = 1.0

@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """Windows build of the lyric overlay. The lyric server is not included."""
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_all, collect_data_files
 
 datas = [
     ("settings_text", "settings_text"),
@@ -9,25 +9,17 @@ datas = [
     ("lyric_api_url.txt", "."),
 ]
 datas += collect_data_files("opencc")
-
-hidden = [
-    "zhconv",
-    "opencc",
-    "winsdk",
-    "winsdk._winrt",
-    "winsdk.system",
-    "winsdk.windows.media",
-    "winsdk.windows.media.control",
-    "winsdk.windows.foundation",
-    "winsdk.windows.foundation.collections",
-    "winsdk.windows.storage",
-    "winsdk.windows.storage.streams",
-]
+binaries = []
+hidden = ["opencc", "certifi"]
+winrt_datas, winrt_binaries, winrt_hidden = collect_all("winrt")
+datas += winrt_datas
+binaries += winrt_binaries
+hidden += winrt_hidden
 
 a = Analysis(
     ["connect_spotify.py"],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hidden,
     hookspath=[],

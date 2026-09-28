@@ -426,15 +426,17 @@ class LyricOverlay(QWidget):
         if self._chrome or self._settings_open:
             self._draw_bar(painter)
         body = self._body_rect()
+        lookup = self._lookup_height()
+        lyric_body = QRectF(body.x(), body.y(), body.width(), max(1, body.height() - lookup))
         if self._mode == "choices":
-            self._draw_choices(painter, body)
+            self._draw_choices(painter, lyric_body)
         elif self._mode == "status":
-            self._draw_status(painter, body)
+            self._draw_status(painter, lyric_body)
         else:
-            self._draw_lyrics(painter, body)
+            self._draw_lyrics(painter, lyric_body)
         if self._settings_open:
             self._draw_settings(painter)
-        self._draw_footer(painter)
+        self._draw_lookup(painter, body)
         painter.end()
 
     def enterEvent(self, event) -> None:  # noqa: N802 — Qt override name
@@ -698,7 +700,7 @@ class LyricOverlay(QWidget):
         text_h = self._content_size()[1]
         bar = _BAR_H if (self._chrome or self._settings_open) else 0
         settings = self._settings_view_height() if self._settings_open else 0
-        height = int(text_h + _PAD_Y * 2 + bar + settings + self._footer_height())
+        height = int(text_h + _PAD_Y * 2 + bar + settings)
         height = min(max(height, 80), self._max_window_height())
         self.resize(self._fixed_width(), height)
 
@@ -731,20 +733,20 @@ class LyricOverlay(QWidget):
         line_h = metrics.height()
         if self._mode == "status":
             rows = self._visual_lines(self._status_sentence(), self._lyric_column_width())
-            return self._fixed_width(), max(1, len(rows)) * line_h
+            return self._fixed_width(), max(1, len(rows)) * line_h + self._lookup_height()
         if self._mode == "words":
-            return self._fixed_width(), self._word_block_height(metrics, line_h)
+            return self._fixed_width(), self._word_block_height(metrics, line_h) + self._lookup_height()
         if self._mode == "choices":
             return self._choice_size(metrics, line_h)
         width = self._lyric_column_width()
         if self._line_mode == "one" or self._highlight == "single":
             shown = self.right if self._highlight == "right" else self.left
             rows = self._visual_lines(shown, width)
-            return self._fixed_width(), max(1, len(rows)) * line_h
+            return self._fixed_width(), max(1, len(rows)) * line_h + self._lookup_height()
         left_n = max(1, len(self._visual_lines(self.left, width))) if self.left else 0
         right_n = max(1, len(self._visual_lines(self.right, width))) if self.right else 0
         gap = 14 if left_n and right_n else 0
-        return self._fixed_width(), left_n * line_h + gap + right_n * line_h
+        return self._fixed_width(), left_n * line_h + gap + right_n * line_h + self._lookup_height()
 
     def _choice_size(self, metrics: QFontMetrics, line_h: int) -> tuple[float, float]:
         """Return the candidate list's text size."""
@@ -760,7 +762,6 @@ class LyricOverlay(QWidget):
         """Return the rectangle under the bar where lyrics are drawn."""
         top = _BAR_H if (self._chrome or self._settings_open) else 0
         bottom = self._settings_view_height() if self._settings_open else 0
-        bottom += self._footer_height()
         return QRectF(0, top, self.width(), self.height() - top - bottom)
 
     def _settings_view_height(self) -> int:
@@ -779,7 +780,7 @@ class LyricOverlay(QWidget):
 
     def _settings_view_rect(self) -> QRectF:
         """Return the on-screen rectangle of the settings panel."""
-        top = self.height() - self._settings_view_height() - self._footer_height()
+        top = self.height() - self._settings_view_height()
         return QRectF(0, top, self.width(), self._settings_view_height())
 
     def _lyric_font(self) -> QFont:
@@ -1329,33 +1330,31 @@ class LyricOverlay(QWidget):
             y += row_h
         painter.restore()
 
-    def _footer_height(self) -> int:
-        """Return the corner-line height, or 0 when there is nothing to say."""
-        if not self._feedback and not self._notice_key:
-            return 0
-        return QFontMetrics(_ui_font(_FEEDBACK_SIZE)).height() + 8
-
-    def _footer_text(self) -> str:
-        """Return the corner line. A playback notice replaces the lookup line."""
+    def _lookup_line(self) -> str:
+        """Return the line drawn at the bottom left of the lyric area."""
         if self._notice_key:
             return self.text(self._notice_key)
         return self._feedback
 
-    def _draw_footer(self, painter: QPainter) -> None:
-        """Draw the lookup line at the bottom left in a small face."""
-        text = self._footer_text()
+    def _lookup_height(self) -> int:
+        """Return the height of the lookup line inside the lyric area."""
+        if not self._lookup_line():
+            return 0
+        return QFontMetrics(_ui_font(_FEEDBACK_SIZE)).height() + 10
+
+    def _draw_lookup(self, painter: QPainter, body: QRectF) -> None:
+        """Draw the lookup line at the bottom left of the lyric area."""
+        text = self._lookup_line()
         if not text:
             return
         font = _ui_font(_FEEDBACK_SIZE)
-        painter.setFont(font)
-        height = self._footer_height()
-        rect = QRectF(12, self.height() - height, max(1, self.width() - 24), height)
         metrics = QFontMetrics(font)
-        shown = metrics.elidedText(text, Qt.TextElideMode.ElideRight, int(rect.width()))
-        baseline = rect.y() + metrics.ascent() + (rect.height() - metrics.height()) / 2
+        width = max(1, int(body.width() - _PAD_X * 2))
+        shown = metrics.elidedText(text, Qt.TextElideMode.ElideRight, width)
+        baseline = body.bottom() - _PAD_Y - metrics.descent()
         path = QPainterPath()
-        path.addText(rect.x(), baseline, font, shown)
-        outline = QPen(QColor(0, 0, 0), 2.0)
+        path.addText(_PAD_X, baseline, font, shown)
+        outline = QPen(QColor(0, 0, 0), 3.0)
         outline.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         outline.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.strokePath(path, outline)

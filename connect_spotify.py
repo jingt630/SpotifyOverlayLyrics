@@ -200,19 +200,14 @@ class OverlayFollow(QObject):
                 self._shown = "netease_search"
                 self.window.set_status("netease_search")
             return
-        if phase in ("none", "error"):
-            token = (song_key, phase, self.netease.reason_key())
-            if self._netease_announced != token:
-                self._netease_announced = token
-                status = "netease_error" if phase == "error" else "netease_none"
-                if self.netease.reason_key():
-                    status = self.netease.reason_key()
-                sentence = self.window.text(status)
-                detail = self.netease.detail().strip()
-                if detail:
-                    sentence = f"{sentence} {detail}"
-                self.window.set_feedback(sentence)
-                self._seen_feedback = lyric_catalog.feedback_line()
+        if phase == "error":
+            status = self.netease.reason_key() or "netease_error"
+            detail = self.netease.detail().strip()
+            marker = ("netease-error", song_key, status, detail)
+            if self._shown != marker:
+                self._shown = marker
+                self.window.set_status(status, detail)
+            return
         if phase in ("saved", "words"):
             frame = self.netease.frame_at(progress, self.window.chinese_script())
             if frame is not None:

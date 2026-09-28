@@ -57,6 +57,35 @@ _LINE_RE = re.compile(r"^\[(\d+),(\d+)\](.*)$")
 _WORD_RE = re.compile(r"\((\d+),(\d+),\d+\)([^()\n]*)")
 
 
+def _urlopen(request: urllib.request.Request, timeout: float):
+    """Open one HTTPS request with the certificate bundle shipped beside the app.
+
+    Purpose:
+        A packaged executable does not use the Python install's certificate
+        file. NetEase then fails the TLS check and the overlay only sees a
+        dropped connection.
+
+    Parameters:
+        request (urllib.request.Request): The call to make.
+        timeout (float): Seconds to wait.
+
+    Returns:
+        http.client.HTTPResponse: The open response. The caller closes it.
+    """
+    import ssl
+
+    import certifi
+
+    context = ssl.create_default_context(cafile=certifi.where())
+    return urllib.request.urlopen(request, timeout=timeout, context=context)
+
+
+def _failure_text(exc: BaseException) -> str:
+    """Return a short reason that fits in the lyric area."""
+    text = f"{type(exc).__name__}: {exc}".replace("\n", " ")
+    return text[:400]
+
+
 def search_songs(track_name: str, artist_name: str) -> list[dict]:
     """Return NetEase songs for a title and artist.
 
@@ -86,7 +115,7 @@ def search_songs(track_name: str, artist_name: str) -> list[dict]:
         headers={"User-Agent": _USER_AGENT, "Referer": "https://music.163.com/"},
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=15) as response:
+    with _urlopen(request, 15) as response:
         payload = json.loads(response.read().decode("utf-8"))
     songs = ((payload.get("result") or {}).get("songs")) or []
     rows: list[dict] = []
@@ -146,7 +175,7 @@ def _mb_json(url: str) -> dict | None:
     """
     request = urllib.request.Request(url, headers={"User-Agent": _MB_AGENT, "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=8) as response:
+        with _urlopen(request, 8) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
         return None
@@ -170,16 +199,24 @@ def _cached_aliases(track_name: str, artist_name: str) -> tuple[list[str], list[
 
 
 def _both_scripts(names: list[str]) -> list[str]:
-    """Return each name in simplified and traditional Chinese."""
-    try:
-        import zhconv
-    except ImportError:
-        return names
+    """Return each name in simplified and traditional Chinese.
+
+    Purpose:
+        OpenCC already ships with the overlay. zhconv looks up its dictionary
+        through an old package path, and that file is missing inside the
+        packaged app.
+    """
+    from chinese_script import both_scripts
+
     found: list[str] = []
-    for name in names:
-        for variant in (zhconv.convert(name, "zh-cn"), zhconv.convert(name, "zh-tw"), name):
-            if variant not in found:
-                found.append(variant)
+    try:
+        for name in names:
+            simplified, traditional = both_scripts(name)
+            for variant in (simplified, traditional, name):
+                if variant and variant not in found:
+                    found.append(variant)
+    except (OSError, ValueError):
+        return names
     return found
 
 
@@ -537,7 +574,7 @@ def _lyric_payload(song_id: int) -> tuple[dict | None, tuple[str, str]]:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
+        with _urlopen(request, 15) as response:
             payload = _decrypt_eapi(response.read())
     except urllib.error.HTTPError as exc:
         body = exc.read()
@@ -546,8 +583,8 @@ def _lyric_payload(song_id: int) -> tuple[dict | None, tuple[str, str]]:
         except (ValueError, json.JSONDecodeError):
             return None, ("netease_refused", f"HTTP {exc.code}")
         return payload, ("", "")
-    except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
-        return None, ("netease_error", "")
+    except (OSError, ValueError, json.JSONDecodeError, TimeoutError) as exc:
+        return None, ("netease_error", _failure_text(exc))
     return payload, ("", "")
 
 
@@ -1137,9 +1174,10 @@ class NeteaseLookup:
             extra_titles, extra_artists = chinese_search_names(query["track_name"], query["artist_name"])
             pooled = collect_songs(query["track_name"], query["artist_name"], extra_titles, extra_artists)
             ranked = rank_songs(pooled, query, extra_titles, extra_artists)
-        except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
+        except (OSError, ValueError, json.JSONDecodeError, TimeoutError, ImportError) as exc:
+            detail = _failure_text(exc)
             lyric_catalog.announce(query, "NetEase", "no response")
-            self._finish(key, "error", query)
+            self._finish(key, "error", query, detail, "netease_error")
             return
         if not ranked:
             lyric_catalog.announce(query, "NetEase", "no synced lyric")

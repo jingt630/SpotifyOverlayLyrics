@@ -128,6 +128,7 @@ def _songs():
     global _collection
     if _collection is not None:
         return _collection
+    import certifi
     from pymongo import MongoClient
 
     from lyric_catalog import _uri
@@ -135,7 +136,7 @@ def _songs():
     uri = _uri()
     if not uri:
         raise SystemExit("MongoDB URI is missing. Put it in atlas-credentials.env.")
-    client = MongoClient(uri, serverSelectionTimeoutMS=8000)
+    client = MongoClient(uri, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=20000)
     client.admin.command("ping")
     collection = client["lyrics"]["songs"]
     collection.create_index("key", unique=True)

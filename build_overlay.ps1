@@ -5,8 +5,17 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-python -m pip install -r requirements-overlay.txt pyinstaller
-python -m PyInstaller --noconfirm SpotifyOverlayLyrics.spec
+function Invoke-Python {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        & py -3.13 @Args
+        return
+    }
+    & python @Args
+}
+
+Invoke-Python -m pip install -r requirements-overlay.txt pyinstaller
+Invoke-Python -m PyInstaller --noconfirm SpotifyOverlayLyrics.spec
 
 Write-Host ""
 Write-Host "Built: $PSScriptRoot\dist\SpotifyOverlayLyrics\SpotifyOverlayLyrics.exe"
