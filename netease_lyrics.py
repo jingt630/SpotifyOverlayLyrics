@@ -20,10 +20,14 @@ from pathlib import Path
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from chinese_script import shown_text, stamp_lines
+import lyric_catalog
 from lrclib_client import (
     DURATION_CHOICE_THRESHOLD_MS,
     LyricCandidate,
+    LyricLine,
+    lyric_slots,
     media_choice_key,
+    parse_synced_lyrics,
     _album_rank,
     _artist_rank,
     _title_rank,
@@ -477,6 +481,49 @@ def word_lyric_result(song_id: int) -> tuple[list[dict], str, str]:
     Postcondition:
         No file is written. A network failure uses netease_error.
     """
+    words, _lines, key, detail = fetch_lyrics(song_id)
+    return words, key, detail
+
+
+def fetch_lyrics(song_id: int) -> tuple[list[dict], list[dict], str, str]:
+    """Return word lines and, when those are missing, synced line lyrics.
+
+    Purpose:
+        One NetEase response can carry word times or only an LRC. The line
+        text is kept so it can be stored when LRCLIB has no synced lyric.
+
+    Parameters:
+        song_id (int): NetEase song id.
+
+    Returns:
+        tuple: Word lines, line lyrics, status key, and detail. The status
+        key is empty when word lines exist.
+
+    Precondition:
+        song_id is a NetEase id from search.
+
+    Postcondition:
+        No file is written.
+    """
+    payload, fail = _lyric_payload(song_id)
+    if payload is None:
+        return [], [], fail[0], fail[1]
+    words, key, detail = _word_lines_from_payload(payload)
+    if words:
+        return words, [], "", ""
+    return [], _lrc_rows(_lyric_field(payload.get("lrc"))), key, detail
+
+
+def _lrc_rows(text: str) -> list[dict]:
+    """Turn a NetEase LRC string into timed lines with stored Chinese copies."""
+    rows = [{"start_ms": line.time_ms, "text": line.text} for line in parse_synced_lyrics(text) if line.text]
+    if rows:
+        stamp_lines(rows)
+    return rows
+
+
+def _lyric_payload(song_id: int) -> tuple[dict | None, tuple[str, str]]:
+    """Download one lyric response, or return a status when the request fails."""
     request = urllib.request.Request(
         _LYRIC_URL,
         data=_eapi_body(song_id),
@@ -495,16 +542,11 @@ def word_lyric_result(song_id: int) -> tuple[list[dict], str, str]:
         try:
             payload = _decrypt_eapi(body)
         except (ValueError, json.JSONDecodeError):
-            return [], "netease_refused", f"HTTP {exc.code}"
-        lines, key, detail = _word_lines_from_payload(payload)
-        if lines:
-            return lines, "", ""
-        if not detail:
-            detail = f"HTTP {exc.code}"
-        return [], key, detail
+            return None, ("netease_refused", f"HTTP {exc.code}")
+        return payload, ("", "")
     except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
-        return [], "netease_error", ""
-    return _word_lines_from_payload(payload)
+        return None, ("netease_error", "")
+    return payload, ("", "")
 
 
 def _word_lines_from_payload(payload: dict) -> tuple[list[dict], str, str]:
@@ -969,6 +1011,23 @@ def _word_fill(word: dict, progress_ms: int) -> float:
     return max(0.0, min(1.0, (progress_ms - start) / duration))
 
 
+def _catalog_kind(document: dict) -> str:
+    """Return word sync, line sync, or no synced lyric for a catalog document."""
+    try:
+        sync = int(document.get("sync"))
+    except (TypeError, ValueError):
+        sync = -1
+    if sync == 1:
+        kind = "word sync"
+    elif sync == 0:
+        kind = "line sync"
+    else:
+        kind = "no synced lyric"
+    if document.get("preference"):
+        kind += ", your choice"
+    return kind
+
+
 class NeteaseLookup:
     """Search NetEase when the song changes or the user skips inside it.
 
@@ -1029,20 +1088,16 @@ class NeteaseLookup:
                 if key != self._song_key:
                     self._pending = query
                 return
-            if key == self._song_key and self._phase in ("search", "choose", "saved", "none", "words"):
+            if key == self._song_key and self._phase in ("search", "choose", "saved", "none", "words", "lines", "miss"):
                 return
             if key == self._song_key and self._phase == "error":
                 if seeked:
                     self._start_locked(query)
                 return
-            saved_lines = self._store.lines_for(query)
-            if saved_lines is not None:
-                self._song_key = key
-                self._phase = "words"
-                self._query = query
-                self._lines = saved_lines
-                self._choices = []
-                self._finished[key] = "saved"
+            cached = lyric_catalog.local_get(query)
+            if cached is not None:
+                lyric_catalog.announce(query, "local", _catalog_kind(cached))
+                self._assign_catalog(key, query, cached)
                 return
             if key in self._finished:
                 self._song_key = key
@@ -1065,18 +1120,27 @@ class NeteaseLookup:
     def _search(self, query: dict) -> None:
         """Search, auto-pick or store candidates, then fetch word lines."""
         key = str(query["key"])
-        saved_lines = self._store.lines_for(query)
-        if saved_lines is not None:
-            self._finish(key, "words", query, "", lines=saved_lines)
+        cached = lyric_catalog.get(query)
+        if cached is not None:
+            place = "MongoDB" if cached.pop("source_hit", None) == "mongo" else "local"
+            lyric_catalog.announce(query, place, _catalog_kind(cached))
+            with self._lock:
+                if self._song_key != key:
+                    self._busy = False
+                    return
+                self._assign_catalog(key, query, cached)
+                self._busy = False
             return
         try:
             extra_titles, extra_artists = chinese_search_names(query["track_name"], query["artist_name"])
             pooled = collect_songs(query["track_name"], query["artist_name"], extra_titles, extra_artists)
             ranked = rank_songs(pooled, query, extra_titles, extra_artists)
         except (OSError, ValueError, json.JSONDecodeError, TimeoutError):
+            lyric_catalog.announce(query, "NetEase", "no response")
             self._finish(key, "error", query)
             return
         if not ranked:
+            lyric_catalog.announce(query, "NetEase", "no synced lyric")
             self._finish(key, "none", query)
             return
         close = [song for song in ranked if song["delta_ms"] <= DURATION_CHOICE_THRESHOLD_MS]
@@ -1093,6 +1157,7 @@ class NeteaseLookup:
             self._choice_songs = songs
             self._phase = "choose"
             self._busy = False
+        lyric_catalog.announce(query, "NetEase", "choose a version")
 
     def _fetch_first_synced(self, query: dict, songs: list[dict]) -> None:
         """Save the first close match that has word lines, or record a miss.
@@ -1105,39 +1170,50 @@ class NeteaseLookup:
         key = str(query["key"])
         reason_key = "netease_none"
         reason_detail = ""
+        line_fallback: list[dict] = []
         for song in songs:
-            lines, status_key, detail = word_lyric_result(int(song["id"]))
-            if not lines:
+            words, line_rows, status_key, detail = fetch_lyrics(int(song["id"]))
+            if not words:
+                if line_rows and not line_fallback:
+                    line_fallback = line_rows
                 reason_key = status_key or "netease_none"
                 reason_detail = detail
                 continue
-            try:
-                save_word_lyrics(query, song, lines)
-            except OSError:
-                reason_key = "netease_error"
-                reason_detail = ""
-                continue
-            self._store.put(str(query["key"]), query, int(song["id"]))
-            self._finish(key, "saved", query, "", lines=lines)
+            lyric_catalog.drop_hold(query)
+            lyric_catalog.put_shared(query, 1, words)
+            lyric_catalog.announce(query, "NetEase", "word sync")
+            self._finish(key, "saved", query, "", lines=words)
+            return
+        if line_fallback:
+            lyric_catalog.hold_lines(query, line_fallback)
+            lyric_catalog.announce(query, "NetEase", "line sync, checking LRCLIB")
+            self._finish(key, "none", query, reason_detail, "netease_line_only")
             return
         phase = "error" if reason_key == "netease_error" else "none"
+        if phase == "error":
+            lyric_catalog.announce(query, "NetEase", "no response")
+        else:
+            lyric_catalog.announce(query, "NetEase", "no synced lyric")
         self._finish(key, phase, query, reason_detail, reason_key)
 
     def _fetch(self, query: dict, song: dict) -> None:
         """Download word lines for the song the overlay selected."""
         key = str(query["key"])
-        lines, status_key, detail = word_lyric_result(int(song["id"]))
-        if not lines:
-            phase = "error" if status_key == "netease_error" else "none"
-            self._finish(key, phase, query, detail, status_key or "netease_none")
+        words, line_rows, status_key, detail = fetch_lyrics(int(song["id"]))
+        if words:
+            lyric_catalog.drop_hold(query)
+            lyric_catalog.put_preference(query, 1, words)
+            lyric_catalog.announce(query, "NetEase", "word sync, your choice")
+            self._finish(key, "saved", query, "", lines=words)
             return
-        try:
-            save_word_lyrics(query, song, lines)
-        except OSError:
-            self._finish(key, "error", query, "", "netease_error")
+        if line_rows:
+            lyric_catalog.drop_hold(query)
+            lyric_catalog.put_preference(query, 0, line_rows)
+            lyric_catalog.announce(query, "NetEase", "line sync, your choice")
+            self._finish(key, "lines", query, "", lines=line_rows)
             return
-        self._store.put(str(query["key"]), query, int(song["id"]))
-        self._finish(key, "saved", query, "", lines=lines)
+        phase = "error" if status_key == "netease_error" else "none"
+        self._finish(key, phase, query, detail, status_key or "netease_none")
 
     def _finish(
         self,
@@ -1174,8 +1250,59 @@ class NeteaseLookup:
                 if lines is not None:
                     self._lines = lines
 
+    def _assign_catalog(self, key: str, query: dict, document: dict) -> None:
+        """Apply a catalog document. The caller holds self._lock."""
+        lines = document.get("lines") if isinstance(document.get("lines"), list) else []
+        try:
+            sync = int(document.get("sync"))
+        except (TypeError, ValueError):
+            sync = -1
+        self._song_key = key
+        self._query = query
+        self._choices = []
+        self._reason_key = ""
+        self._detail = ""
+        if sync == 1 and lines:
+            self._phase = "words"
+            self._lines = lines
+            self._finished[key] = "saved"
+            return
+        if sync == 0 and lines:
+            self._phase = "lines"
+            self._lines = lines
+            self._finished[key] = "lines"
+            return
+        self._phase = "miss"
+        self._lines = []
+        self._finished[key] = "miss"
+
+    def adopt_lines(self, query: dict, lines: list[dict]) -> None:
+        """Show NetEase line lyrics after LRCLIB had no synced record."""
+        key = str(query["key"])
+        with self._lock:
+            self._assign_catalog(key, query, {"sync": 0, "lines": lines})
+
+    def mark_miss(self, query: dict) -> None:
+        """Stop searching this song. Both sources had no synced lyric."""
+        key = str(query["key"])
+        with self._lock:
+            self._assign_catalog(key, query, {"sync": -1, "lines": []})
+
+    def line_slots(self, progress_ms: int, script: str = "original") -> tuple[str, str, str] | None:
+        """Return the left line, the right line, and which side is current."""
+        with self._lock:
+            if self._phase != "lines" or not self._lines:
+                return None
+            rows = self._lines
+        timed = tuple(
+            LyricLine(int(row.get("start_ms") or 0), shown_text(row, script))
+            for row in rows
+            if isinstance(row, dict) and str(row.get("text") or "")
+        )
+        return lyric_slots(timed, progress_ms)
+
     def phase(self) -> str:
-        """Return search, choose, saved, words, none, error, or ready."""
+        """Return search, choose, saved, words, lines, miss, none, error, or ready."""
         with self._lock:
             return self._phase
 

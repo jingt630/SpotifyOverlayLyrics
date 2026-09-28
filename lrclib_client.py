@@ -17,6 +17,7 @@ remembers that choice for the Spotify track id.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import re
 import sys
@@ -27,7 +28,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from chinese_script import lrclib_lines
+from chinese_script import lrclib_lines, stamp_lines
+import lyric_catalog
 
 # Public LRCLIB API. No key is sent.
 LRCLIB_API = "https://lrclib.net"
@@ -53,12 +55,6 @@ def _debug(*args, **kwargs) -> None:
 # number-to-number map. The .spotify directory is gitignored.
 # JSON cannot store comments, so song name, artist, album, and duration live
 # in the spreadsheet beside this file.
-CHOICES_PATH = Path(__file__).resolve().parent / ".spotify" / "lyric_choices.json"
-CATALOG_PATH = CHOICES_PATH.with_name("lyric_catalog.csv")
-CATALOG_FIELDS = ("spotify_id", "lrclib_id", "track_name", "artist_name", "album_name", "duration")
-WINDOWS_CHOICES_PATH = CHOICES_PATH.with_name("windows_lyric_choices.json")
-WINDOWS_CATALOG_PATH = CHOICES_PATH.with_name("windows_lyric_catalog.csv")
-WINDOWS_CATALOG_FIELDS = ("track_name", "artist_name", "album_name", "lrclib_id")
 
 
 class LrcLibError(RuntimeError):
@@ -874,6 +870,41 @@ def _match_from_record(
     )
 
 
+def _match_from_rows(query: dict, rows: list[dict], reason: str) -> LyricMatch | None:
+    """Build a line-sync match from catalog rows. record_id is a stable hash of the song key."""
+    lines = tuple(
+        LyricLine(int(row.get("start_ms") or 0), str(row.get("text") or ""))
+        for row in rows
+        if isinstance(row, dict) and str(row.get("text") or "")
+    )
+    lyric_ms = lyric_duration_ms(lines)
+    if lyric_ms is None:
+        return None
+    digest = int(hashlib.sha256(lyric_catalog.song_key_of(query).encode("utf-8")).hexdigest()[:8], 16)
+    duration_ms = int(query.get("duration_ms") or 0)
+    return LyricMatch(
+        record_id=digest,
+        track_name=str(query.get("track_name") or ""),
+        artist_name=str(query.get("artist_name") or ""),
+        album_name=str(query.get("album_name") or ""),
+        duration_sec=duration_ms // 1000,
+        lyric_duration_ms=lyric_ms,
+        duration_delta_ms=abs(duration_ms - lyric_ms),
+        lines=lines,
+        source="catalog",
+        candidate_count=1,
+        reason=reason,
+    )
+
+
+def _line_rows(match: LyricMatch) -> list[dict]:
+    """Copy timed lines into catalog rows."""
+    rows = [{"start_ms": line.time_ms, "text": line.text} for line in match.lines if line.text]
+    if rows:
+        stamp_lines(rows)
+    return rows
+
+
 def synced_choice_rows(records: list[dict], duration_ms: int) -> list[tuple[LyricCandidate, dict]]:
     """Return synced LRCLIB records closest to the Spotify duration.
 
@@ -998,180 +1029,24 @@ def media_choice_key(track_name: str, artist_name: str, album_name: str) -> str:
     return f"{track_name}\u001f{artist_name}\u001f{album_name}"
 
 
-def windows_choice_store() -> "LyricChoiceStore":
-    """Return the choice map that keys LRCLIB ids by title, artist, and album."""
-    return LyricChoiceStore(WINDOWS_CHOICES_PATH, WINDOWS_CATALOG_PATH, WINDOWS_CATALOG_FIELDS)
-
-
-class LyricChoiceStore:
-    """Remember which LRCLIB id belongs to each song.
-
-    The Spotify map is Spotify track id (str) to LRCLIB id (int), stored in
-    CHOICES_PATH and CATALOG_PATH. The Windows map is title, artist, and album
-    to LRCLIB id, stored in WINDOWS_CHOICES_PATH and WINDOWS_CATALOG_PATH.
-    """
-
-    def __init__(
-        self,
-        path: Path = CHOICES_PATH,
-        catalog_path: Path | None = None,
-        fields: tuple[str, ...] | None = None,
-    ) -> None:
-        """Load the saved map, or start from an empty one.
-
-        Purpose:
-            Make earlier id choices available for this process.
-
-        Parameters:
-            path (Path): JSON file of the map. Defaults to CHOICES_PATH.
-            catalog_path (Path | None): Spreadsheet beside the JSON. Defaults
-                to CATALOG_PATH.
-            fields (tuple[str, ...] | None): Spreadsheet columns. Defaults to
-                CATALOG_FIELDS. A column list without spotify_id is the
-                Windows title/artist/album map.
-
-        Returns:
-            None.
-
-        Precondition:
-            If path exists, it contains a JSON object.
-
-        Postcondition:
-            choices maps each song key to an integer LRCLIB id.
-            catalog holds the spreadsheet rows when the catalog file exists.
-        """
-        self.path = path
-        self.catalog_path = catalog_path or CATALOG_PATH
-        self.fields = fields or CATALOG_FIELDS
-        self._by_song = "spotify_id" not in self.fields
-        self.choices: dict[str, int] = {}
-        self.catalog: dict[str, dict[str, str]] = {}
-        if path.exists():
-            raw = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(raw, dict):
-                self.choices = {str(key): int(value) for key, value in raw.items()}
-        if self.catalog_path.exists():
-            with self.catalog_path.open(encoding="utf-8-sig", newline="") as handle:
-                for row in csv.DictReader(handle):
-                    key = self._catalog_key(row)
-                    if key:
-                        self.catalog[key] = {field: str(row.get(field) or "") for field in self.fields}
-
-    def get(self, spotify_id: str) -> int | None:
-        """Return the saved LRCLIB id for this Spotify track, or None."""
-        return self.choices.get(spotify_id)
-
-    def put(
-        self,
-        spotify_id: str,
-        lrclib_id: int,
-        track_name: str,
-        artist_name: str,
-        album_name: str,
-        duration_ms: int,
-    ) -> None:
-        """Save one Spotify track id to LRCLIB id and write the spreadsheet row.
-
-        Purpose:
-            Remember the LRCLIB id for this Spotify track so later plays reuse it.
-            The spreadsheet row records the song name, artist, album, and duration.
-
-        Parameters:
-            spotify_id (str): Spotify track id.
-            lrclib_id (int): LRCLIB record id for this track.
-            track_name (str): Spotify track name.
-            artist_name (str): Spotify artist names.
-            album_name (str): Spotify album name.
-            duration_ms (int): Spotify track length in milliseconds.
-
-        Returns:
-            None.
-
-        Precondition:
-            spotify_id is non-empty. lrclib_id is an integer. duration_ms is >= 0.
-
-        Postcondition:
-            get(spotify_id) returns lrclib_id. The JSON map and the spreadsheet
-            for this store each contain this song. An unchanged row does not
-            rewrite the files. The Spotify store is lyric_choices.json. The
-            Windows store is windows_lyric_choices.json.
-        """
-        if self._by_song:
-            row = {
-                "track_name": track_name,
-                "artist_name": artist_name,
-                "album_name": album_name,
-                "lrclib_id": str(lrclib_id),
-            }
-        else:
-            row = {
-                "spotify_id": spotify_id,
-                "lrclib_id": str(lrclib_id),
-                "track_name": track_name,
-                "artist_name": artist_name,
-                "album_name": album_name,
-                "duration": format_clock(duration_ms),
-            }
-        if self.choices.get(spotify_id) == lrclib_id and self.catalog.get(spotify_id) == row:
-            return
-        self.choices[spotify_id] = lrclib_id
-        self.catalog[spotify_id] = row
-        self._write()
-
-    def forget(self, spotify_id: str) -> None:
-        """Drop a saved choice when that LRCLIB id can no longer be loaded."""
-        if spotify_id not in self.choices and spotify_id not in self.catalog:
-            return
-        self.choices.pop(spotify_id, None)
-        self.catalog.pop(spotify_id, None)
-        self._write()
-
-    def _catalog_key(self, row: dict) -> str:
-        """Return the map key stored in one spreadsheet row."""
-        if self._by_song:
-            return media_choice_key(
-                str(row.get("track_name") or ""),
-                str(row.get("artist_name") or ""),
-                str(row.get("album_name") or ""),
-            )
-        return str(row.get("spotify_id") or "")
-
-    def _write(self) -> None:
-        """Write the id map and the spreadsheet from the in-memory rows."""
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(self.choices, indent=2, ensure_ascii=not self._by_song),
-            encoding="utf-8",
-        )
-        with self.catalog_path.open("w", encoding="utf-8-sig", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=self.fields)
-            writer.writeheader()
-            for spotify_id in self.choices:
-                row = self.catalog.get(spotify_id)
-                if row is not None:
-                    writer.writerow(row)
-
-
 class LyricLookup:
     """Cache one LyricMatch per Spotify track so each keypress does not call LRCLIB.
 
     The current line is recomputed locally from progress_ms. LRCLIB is called
     again only when the Spotify track id changes. singing_line and next_line
     keep the pair now on screen, including each line's LRCLIB timestamp.
-    A user-picked LRCLIB id is read from LyricChoiceStore before searching again.
+    Saved lyrics are read from lyric_catalog before LRCLIB is searched again.
     """
 
-    def __init__(self, client: LrcLibClient | None = None, choices: LyricChoiceStore | None = None) -> None:
-        """Start with an empty session cache and the saved id map.
+    def __init__(self, client: LrcLibClient | None = None) -> None:
+        """Start with an empty session cache.
 
         Purpose:
-            Hold the last match in memory and load earlier user choices.
+            Hold the last match in memory.
 
         Parameters:
             client (LrcLibClient | None): Client to use. A new one is created
                 when this is omitted.
-            choices (LyricChoiceStore | None): Saved Spotify-id map. A new
-                store is loaded when this is omitted.
 
         Returns:
             None.
@@ -1183,7 +1058,6 @@ class LyricLookup:
             No LRCLIB request has been made. The session cache is empty.
         """
         self.client = client or LrcLibClient()
-        self.choices = choices or LyricChoiceStore()
         self._key: str | None = None
         self._match: LyricMatch | None = None
         self._miss_key: str | None = None
@@ -1412,7 +1286,10 @@ class LyricLookup:
         if match is None:
             self._key = None
             self._match = None
-            self._miss_key = query["key"]
+            if lyric_catalog.sync_of(query) == 1:
+                self._miss_key = None
+            else:
+                self._miss_key = query["key"]
             return
         self._match = match
         self._key = query["key"]
@@ -1424,6 +1301,10 @@ class LyricLookup:
         if track_id != self._pending_key or not self._pending:
             return None
         return list(self._pending)
+
+    def has_match(self, track_id: str | None) -> bool:
+        """Return whether a synced line lyric is already locked for this song."""
+        return track_id is not None and track_id == self._key and self._match is not None
 
     def lacks_synced_lyrics(self, track_id: str | None) -> bool:
         """Return whether this Spotify track was already found to have no synced lyrics.
@@ -1467,7 +1348,7 @@ class LyricLookup:
             record_id is one of pending_choices.
 
         Postcondition:
-            The choice map contains this Spotify track. pending_choices is empty.
+            The lyric is stored in lyric_catalog. pending_choices is empty.
             Later line changes read the stored timestamps and do not call LRCLIB.
         """
         query = self._pending_query
@@ -1483,14 +1364,9 @@ class LyricLookup:
         )
         if match is None:
             return
-        self.choices.put(
-            query["key"],
-            record_id,
-            query["track_name"],
-            query["artist_name"],
-            query["album_name"],
-            query["duration_ms"],
-        )
+        lyric_catalog.drop_hold(query)
+        lyric_catalog.put_preference(query, 0, _line_rows(match))
+        lyric_catalog.announce(query, "LRCLIB", "line sync, your choice")
         self._match = match
         self._key = query["key"]
         self._miss_key = None
@@ -1570,26 +1446,24 @@ class LyricLookup:
             query["key"] is the Spotify track id string.
 
         Postcondition:
-            An auto-picked or user-entered id is stored in the choice map.
-            A later call for the same key loads that id without searching again.
+            An auto-picked lyric is stored in lyric_catalog. A later call for
+            the same song reads that file without searching again.
         """
-        saved_id = self.choices.get(query["key"])
-        if saved_id is not None:
-            record = self.client.get_by_id(saved_id)
-            match = _match_from_record(record, query["duration_ms"], "saved", 1, "saved LRCLIB id for this Spotify track") if record else None
-            if match is not None:
-                self.choices.put(
-                    query["key"],
-                    saved_id,
-                    query["track_name"],
-                    query["artist_name"],
-                    query["album_name"],
-                    query["duration_ms"],
-                )
-                _debug(f"Using saved LRCLIB id {saved_id} for this Spotify track.")
-                _debug(lrclib_track_url(saved_id))
-                return match
-            self.choices.forget(query["key"])
+        cached = lyric_catalog.get(query)
+        if cached is not None:
+            place = "MongoDB" if cached.pop("source_hit", None) == "mongo" else "local"
+            try:
+                sync = int(cached.get("sync"))
+            except (TypeError, ValueError):
+                sync = -1
+            if sync < 0 or sync == 1:
+                if sync < 0:
+                    lyric_catalog.announce(query, place, "no synced lyric")
+                return None
+            if sync == 0 and isinstance(cached.get("lines"), list):
+                choice = ", your choice" if cached.get("preference") else ""
+                lyric_catalog.announce(query, place, f"line sync{choice}")
+                return _match_from_rows(query, cached["lines"], "catalog line lyric")
         found = self.client.candidate_records(
             query["track_name"],
             query["artist_name"],
@@ -1607,15 +1481,10 @@ class LyricLookup:
             record, count, reason = chosen
             match = _match_from_record(record, query["duration_ms"], "search", count, reason)
             if match is not None:
-                self.choices.put(
-                    query["key"],
-                    match.record_id,
-                    query["track_name"],
-                    query["artist_name"],
-                    query["album_name"],
-                    query["duration_ms"],
-                )
                 _debug(f"Saved LRCLIB id {match.record_id} for this Spotify track.")
+                lyric_catalog.drop_hold(query)
+                lyric_catalog.put_shared(query, 0, _line_rows(match))
+                lyric_catalog.announce(query, "LRCLIB", "line sync")
                 return match
         rows = synced_choice_rows(found, query["duration_ms"])
         if not rows:
@@ -1629,23 +1498,21 @@ class LyricLookup:
             self._pending_query = query
             self._pending = [candidate for candidate, _record in rows[:5]]
             self._pending_records = {candidate.record_id: record for candidate, record in rows[:5]}
+            lyric_catalog.announce(query, "LRCLIB", "choose a version")
             return None
-        self.choices.put(
-            query["key"],
-            picked,
-            query["track_name"],
-            query["artist_name"],
-            query["album_name"],
-            query["duration_ms"],
-        )
         record = next(item for item in found if int(item.get("id") or 0) == picked)
-        return _match_from_record(
+        match = _match_from_record(
             record,
             query["duration_ms"],
             "chosen",
             1,
             "LRCLIB id entered for this Spotify track",
         )
+        if match is not None:
+            lyric_catalog.drop_hold(query)
+            lyric_catalog.put_preference(query, 0, _line_rows(match))
+            lyric_catalog.announce(query, "LRCLIB", "line sync, your choice")
+        return match
 
 
 def spotify_track_query(now: dict | None) -> dict | None:

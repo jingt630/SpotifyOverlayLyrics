@@ -71,10 +71,11 @@ def both_scripts(text: str) -> tuple[str, str]:
 
 
 def stamp_lines(lines: list[dict]) -> bool:
-    """Add text_s and text_t on each line and word that does not have them.
+    """Add text_s and text_t only where the text contains Chinese.
 
     Purpose:
-        Keep both scripts beside the original NetEase words.
+        Keep both scripts beside Chinese lyric text. English, Japanese, and
+        other text omit those fields.
 
     Parameters:
         lines (list[dict]): Timed lines. Each line may contain a words list.
@@ -86,8 +87,8 @@ def stamp_lines(lines: list[dict]) -> bool:
         lines contains dicts.
 
     Postcondition:
-        Existing text_s and text_t values are left as they are. Timing fields
-        are unchanged.
+        A line or word that is not Chinese does not gain text_s or text_t.
+        Timing fields are unchanged.
     """
     changed = False
     for line in lines:
@@ -103,12 +104,20 @@ def stamp_lines(lines: list[dict]) -> bool:
         joined = "".join(str(word.get("text") or "") for word in tokens)
         simplified = str(line.get("text_s") or "")
         traditional = str(line.get("text_t") or "")
-        if joined == source and len(simplified) == len(source) and len(traditional) == len(source):
+        flags = _convert_flags(source)
+        if (
+            joined == source
+            and "text_s" in line
+            and "text_t" in line
+            and len(simplified) == len(source)
+            and len(traditional) == len(source)
+            and len(flags) == len(source)
+        ):
             pos = 0
             for word in tokens:
                 token = str(word.get("text") or "")
                 end = pos + len(token)
-                if "text_s" not in word or "text_t" not in word:
+                if any(flags[pos:end]) and ("text_s" not in word or "text_t" not in word):
                     word["text_s"] = simplified[pos:end]
                     word["text_t"] = traditional[pos:end]
                     changed = True
@@ -179,15 +188,17 @@ def lrclib_lines(record_id: int, texts: tuple[str, ...], mode: str) -> tuple[str
 
 
 def _stamp_node(node: dict, mask: list[bool] | None = None) -> bool:
-    """Fill text_s and text_t on one line or word when either is missing."""
-    if "text_s" in node and "text_t" in node:
-        return False
+    """Fill text_s and text_t when this text contains Chinese and either field is missing."""
     text = str(node.get("text") or "")
     if mask is not None and len(mask) == len(text):
-        if not any(mask):
-            node["text_s"] = text
-            node["text_t"] = text
-            return True
+        chinese = any(mask)
+    else:
+        chinese = any(_convert_flags(text))
+    if not chinese:
+        return False
+    if "text_s" in node and "text_t" in node:
+        return False
+    if mask is not None and len(mask) == len(text):
         node["text_s"] = _convert_masked(text, mask, _to_simplified())
         node["text_t"] = _convert_masked(text, mask, _to_traditional())
         return True
@@ -339,13 +350,20 @@ def _load_lrclib(record_id: int, texts: tuple[str, ...]) -> list[dict[str, str]]
     if rows is None:
         rows = []
         for text in texts:
-            simplified, traditional = both_scripts(text)
-            rows.append({"text": text, "text_s": simplified, "text_t": traditional})
-        _SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps({"record_id": record_id, "lines": rows}, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+            row = {"text": text}
+            if any(_convert_flags(text)):
+                simplified, traditional = both_scripts(text)
+                row["text_s"] = simplified
+                row["text_t"] = traditional
+            rows.append(row)
+        import lyric_catalog
+
+        if lyric_catalog.store_locally():
+            _SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps({"record_id": record_id, "lines": rows}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
     _lrclib_cache[record_id] = rows
     return rows
 
@@ -357,6 +375,9 @@ def _rows_match(rows: list, texts: tuple[str, ...]) -> bool:
     for row, text in zip(rows, texts):
         if not isinstance(row, dict) or row.get("text") != text:
             return False
-        if "text_s" not in row or "text_t" not in row:
+        if any(_convert_flags(text)):
+            if "text_s" not in row or "text_t" not in row:
+                return False
+        elif "text_s" in row or "text_t" in row:
             return False
     return True

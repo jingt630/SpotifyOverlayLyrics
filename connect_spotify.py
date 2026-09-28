@@ -15,8 +15,9 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import lrclib_client
 from lyric_overlay import LyricOverlay
+import lyric_catalog
 from netease_lyrics import NeteaseLookup
-from lrclib_client import LrcLibError, LyricLookup, LyricWindow, windows_choice_store
+from lrclib_client import LrcLibError, LyricLookup, LyricWindow
 
 # True prints the LRCLIB search. False follows the current lyric line on its own.
 PRINT_API_DETAILS = False
@@ -182,6 +183,16 @@ class OverlayFollow(QObject):
                 self._shown = choice_key
                 self.window.set_choices(self.netease.candidates(), self.netease.accept, "netease_pick")
             return
+        if phase == "lines":
+            slots = self.netease.line_slots(progress, self.window.chinese_script())
+            if slots is not None and slots != self._shown:
+                self._shown = slots
+                self.window.set_lines(slots[0], slots[1], slots[2])
+            return
+        if phase == "miss":
+            self._set_paint_interval(False)
+            self._show_lrclib(now, progress)
+            return
         if phase == "search":
             self._warm_lrclib(now, progress)
             if self._shown != "netease_search":
@@ -211,17 +222,25 @@ class OverlayFollow(QObject):
                     self.window.set_words(frame[1], frame[2], frame[0])
                 return
         self._set_paint_interval(False)
+        self._show_lrclib(now, progress)
+
+    def _show_lrclib(self, now: dict | None, progress: int) -> None:
+        """Draw LRCLIB lines, or NetEase line lyrics when LRCLIB has none."""
         try:
             shown = _lyric_print(self.lyrics, now, progress)
         except LrcLibError:
             shown = "busy"
         if shown is None:
+            self._settle_catalog(now, progress)
             return
         if isinstance(shown, list):
             self._shown = ("choose", _track_id(now) or "")
             self.window.set_choices(shown, self.lyrics.accept_candidate)
             return
         if isinstance(shown, str):
+            if shown == "none":
+                self._settle_catalog(now, progress)
+                return
             if shown == self._shown:
                 return
             self._shown = shown
@@ -232,6 +251,55 @@ class OverlayFollow(QObject):
             return
         self._shown = slots
         self.window.set_lines(slots[0], slots[1], slots[2])
+
+    def _settle_catalog(self, now: dict | None, progress: int) -> None:
+        """Store a shared miss, or keep NetEase line lyrics when LRCLIB has none.
+
+        Purpose:
+            A personal pick is already on disk. This runs only after both
+            lookups have finished without asking the user to choose.
+
+        Parameters:
+            now (dict | None): Current playback body.
+            progress (int): Playback position in milliseconds.
+
+        Returns:
+            None.
+
+        Precondition:
+            The NetEase phase is no longer search or choose.
+
+        Postcondition:
+            A held NetEase line lyric is shared and drawn. A double miss is
+            recorded so the next play does not search again.
+        """
+        if self.netease.phase() in ("search", "choose", "error", "lines", "words", "saved"):
+            return
+        query = lrclib_client.spotify_track_query(now)
+        if query is None or lyric_catalog.local_get(query) is not None:
+            return
+        track = query["key"]
+        if self.lyrics.pending_choices(track) or self.lyrics.is_busy(track):
+            return
+        if self.lyrics.has_match(track):
+            lyric_catalog.drop_hold(query)
+            return
+        if not self.lyrics.lacks_synced_lyrics(track):
+            return
+        held = lyric_catalog.held_lines(query)
+        if held:
+            lyric_catalog.drop_hold(query)
+            lyric_catalog.put_shared(query, 0, held)
+            lyric_catalog.announce(query, "NetEase", "line sync")
+            self.netease.adopt_lines(query, held)
+            slots = self.netease.line_slots(progress, self.window.chinese_script())
+            if slots is not None:
+                self._shown = slots
+                self.window.set_lines(slots[0], slots[1], slots[2])
+            return
+        lyric_catalog.put_miss(query)
+        lyric_catalog.announce(query, "NetEase and LRCLIB", "no synced lyric")
+        self.netease.mark_miss(query)
 
     def _set_paint_interval(self, fast: bool) -> None:
         """Repaint word fills at display rate, and line changes on the slower clock.
@@ -390,7 +458,7 @@ def run_windows_overlay(lyrics: LyricLookup) -> None:
 
     Postcondition:
         The function returns when the overlay window is closed. Spotify's
-        lyric_choices.json and lyric_catalog.csv are not written.
+        LRCLIB id maps under .spotify are not written.
     """
     from windows_media import WindowsPlayback
 
@@ -450,7 +518,7 @@ def main() -> None:
 
     lrclib_client.VERBOSE = PRINT_API_DETAILS
     lrclib_client.OVERLAY_CHOICES = not PRINT_API_DETAILS
-    lyrics = LyricLookup(choices=windows_choice_store())
+    lyrics = LyricLookup()
     run_windows_overlay(lyrics)
 
 

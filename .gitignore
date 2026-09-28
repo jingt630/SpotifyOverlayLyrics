@@ -1,5 +1,9 @@
 .spotify/
+.localLyric/
 __pycache__/
 *.pyc
 .netease/
 .notes/
+*.env
+/.netease
+*.csv
