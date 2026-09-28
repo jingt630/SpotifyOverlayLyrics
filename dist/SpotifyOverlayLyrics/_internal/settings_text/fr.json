@@ -33,5 +33,6 @@
   "none": "Pas de paroles synchronisées pour ce titre.",
   "busy": "LRCLIB est occupé. Nouvel essai…",
   "loading": "Chargement des paroles…",
-  "playback_failed": "La lecture n'a pas changé."
+  "playback_failed": "La lecture n'a pas changé.",
+  "automation": "Autorisez cette app à contrôler Spotify dans Réglages Système → Confidentialité et sécurité → Automatisation."
 }

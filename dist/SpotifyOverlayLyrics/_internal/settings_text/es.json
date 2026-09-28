@@ -33,5 +33,6 @@
   "none": "No hay letra sincronizada para esta pista.",
   "busy": "LRCLIB está ocupado. Reintentando…",
   "loading": "Cargando la letra…",
-  "playback_failed": "La reproducción no cambió."
+  "playback_failed": "La reproducción no cambió.",
+  "automation": "Permite que esta app controle Spotify en Ajustes del Sistema → Privacidad y seguridad → Automatización."
 }

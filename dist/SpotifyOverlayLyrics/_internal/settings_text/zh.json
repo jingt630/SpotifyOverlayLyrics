@@ -33,5 +33,6 @@
   "none": "这首歌没有同步歌词。",
   "busy": "歌词库繁忙，正在重试…",
   "loading": "正在加载歌词…",
-  "playback_failed": "播放没有切换成功。"
+  "playback_failed": "播放没有切换成功。",
+  "automation": "请在“系统设置 → 隐私与安全性 → 自动化”中允许此应用控制 Spotify。"
 }

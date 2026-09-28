@@ -1008,7 +1008,7 @@ def media_choice_key(track_name: str, artist_name: str, album_name: str) -> str:
     """Return the map key for a song identified by title, artist, and album.
 
     Purpose:
-        Windows media sessions have no Spotify track id. Those three strings
+        The desktop player has no Spotify track id. Those three strings
         are what an LRCLIB search uses, so the same triple should reuse one
         LRCLIB id.
 

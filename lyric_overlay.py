@@ -88,20 +88,6 @@ def _load_text() -> dict[str, dict[str, str]]:
 
 _TEXT = _load_text()
 
-# Segoe Fluent Icons / MDL2 code points. The bar is drawn with these glyphs.
-_GLYPH = {
-    "settings": "\uE713",
-    "lock": "\uE72E",
-    "unlock": "\uE785",
-    "previous": "\uE892",
-    "pause": "\uE769",
-    "play": "\uE768",
-    "next": "\uE893",
-    "minimize": "\uE921",
-    "close": "\uE8BB",
-}
-
-
 def _load_ui() -> dict:
     """Return the saved language, line mode, font size, and theme."""
     saved = {
@@ -153,17 +139,11 @@ def _save_ui(language: str, lines: str, font: int, theme: str, script: str, stor
     )
 
 
-def _icon_font(size: int) -> QFont:
-    """Return a Windows icon font at size points."""
-    font = QFont("Segoe Fluent Icons", size)
-    if not QFontMetrics(font).inFontUcs4(0xE713):
-        font = QFont("Segoe MDL2 Assets", size)
-    return font
-
-
 def _ui_font(size: int) -> QFont:
     """Return the font used for settings labels."""
-    font = QFont("Segoe UI", size)
+    font = QFont()
+    font.setFamilies([".AppleSystemUIFont", "Helvetica Neue", "PingFang SC"])
+    font.setPointSize(size)
     font.setWeight(QFont.Weight.Normal)
     return font
 
@@ -783,47 +763,118 @@ class LyricOverlay(QWidget):
         return QRectF(0, top, self.width(), self._settings_view_height())
 
     def _lyric_font(self) -> QFont:
-        """Return a bold lyric face. Chinese uses Microsoft YaHei when it is installed."""
-        font = QFont("Microsoft YaHei", self._font_size)
+        """Return a bold lyric face that covers Chinese on this Mac."""
+        font = QFont()
+        font.setFamilies(["PingFang SC", "Hiragino Sans", "Helvetica Neue"])
+        font.setPointSize(self._font_size)
         font.setWeight(QFont.Weight.Bold)
-        if not QFontMetrics(font).inFontUcs4(0x6B4C):
-            font = QFont("Segoe UI", self._font_size)
-            font.setWeight(QFont.Weight.Bold)
         return font
 
     def _draw_bar(self, painter: QPainter) -> None:
         """Draw the centered icon row."""
         icons = [
-            ("settings", _GLYPH["settings"]),
-            ("lock", _GLYPH["lock"] if self._on_top else _GLYPH["unlock"]),
-            ("previous", _GLYPH["previous"]),
-            ("pause", _GLYPH["pause"] if self._playing else _GLYPH["play"]),
-            ("next", _GLYPH["next"]),
-            ("minimize", _GLYPH["minimize"]),
-            ("close", _GLYPH["close"]),
+            ("settings", "settings"),
+            ("lock", "lock" if self._on_top else "unlock"),
+            ("previous", "previous"),
+            ("pause", "pause" if self._playing else "play"),
+            ("next", "next"),
+            ("minimize", "minimize"),
+            ("close", "close"),
         ]
         total = len(icons) * _ICON + (len(icons) - 1) * _ICON_GAP
         x = (self.width() - total) / 2
         y = (_BAR_H - _ICON) / 2
-        painter.setFont(_icon_font(14))
-        for kind, glyph in icons:
+        for kind, shape in icons:
             rect = QRectF(x, y, _ICON, _ICON)
             if self._hot == f"{kind}:{kind}":
                 tint = QColor(255, 255, 255, 50) if self._theme == "dark" else QColor(0, 0, 0, 28)
                 painter.fillRect(rect, tint)
-            self._draw_glyph(painter, rect, glyph)
+            self._draw_icon(painter, rect, shape)
             self._hits.append((rect, kind, kind))
             x += _ICON + _ICON_GAP
 
-    def _draw_glyph(self, painter: QPainter, rect: QRectF, glyph: str) -> None:
-        """Draw one icon in the theme color with a contrasting edge."""
-        flags = Qt.AlignmentFlag.AlignCenter
-        edge = QColor(0, 0, 0) if self._theme == "dark" else QColor(255, 255, 255)
-        painter.setPen(edge)
-        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            painter.drawText(rect.translated(dx, dy), flags, glyph)
-        painter.setPen(self._ink())
-        painter.drawText(rect, flags, glyph)
+    def _draw_icon(self, painter: QPainter, rect: QRectF, kind: str) -> None:
+        """Draw one control with shapes, so the bar does not depend on a Windows icon font."""
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        ink = self._ink()
+        pen = QPen(ink, 1.6)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        side = min(rect.width(), rect.height()) * 0.56
+        left = rect.x() + (rect.width() - side) / 2
+        top = rect.y() + (rect.height() - side) / 2
+
+        def at(u: float, v: float) -> QPointF:
+            return QPointF(left + side * u, top + side * v)
+
+        if kind == "play":
+            path = QPainterPath()
+            path.moveTo(at(0.22, 0.12))
+            path.lineTo(at(0.22, 0.88))
+            path.lineTo(at(0.88, 0.50))
+            path.closeSubpath()
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(ink)
+            painter.drawPath(path)
+        elif kind == "pause":
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(ink)
+            painter.drawRoundedRect(QRectF(left + side * 0.16, top + side * 0.12, side * 0.22, side * 0.76), 1.2, 1.2)
+            painter.drawRoundedRect(QRectF(left + side * 0.62, top + side * 0.12, side * 0.22, side * 0.76), 1.2, 1.2)
+        elif kind == "previous":
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(ink)
+            painter.drawRoundedRect(QRectF(left + side * 0.10, top + side * 0.16, side * 0.14, side * 0.68), 1, 1)
+            path = QPainterPath()
+            path.moveTo(at(0.88, 0.14))
+            path.lineTo(at(0.36, 0.50))
+            path.lineTo(at(0.88, 0.86))
+            path.closeSubpath()
+            painter.drawPath(path)
+        elif kind == "next":
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(ink)
+            painter.drawRoundedRect(QRectF(left + side * 0.76, top + side * 0.16, side * 0.14, side * 0.68), 1, 1)
+            path = QPainterPath()
+            path.moveTo(at(0.12, 0.14))
+            path.lineTo(at(0.64, 0.50))
+            path.lineTo(at(0.12, 0.86))
+            path.closeSubpath()
+            painter.drawPath(path)
+        elif kind == "minimize":
+            painter.drawLine(at(0.16, 0.72), at(0.84, 0.72))
+        elif kind == "close":
+            painter.drawLine(at(0.22, 0.22), at(0.78, 0.78))
+            painter.drawLine(at(0.78, 0.22), at(0.22, 0.78))
+        elif kind == "settings":
+            for row, knob in ((0.28, 0.68), (0.50, 0.34), (0.72, 0.56)):
+                painter.setPen(pen)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawLine(at(0.08, row), at(0.92, row))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(ink)
+                painter.drawEllipse(at(knob, row), side * 0.11, side * 0.11)
+        elif kind in ("lock", "unlock"):
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            if kind == "unlock":
+                path = QPainterPath()
+                path.moveTo(at(0.30, 0.46))
+                path.lineTo(at(0.30, 0.32))
+                path.arcTo(QRectF(left + side * 0.30, top + side * 0.08, side * 0.42, side * 0.36), 180, -180)
+                painter.drawPath(path)
+            else:
+                painter.drawArc(
+                    QRectF(left + side * 0.26, top + side * 0.06, side * 0.48, side * 0.40),
+                    180 * 16,
+                    -180 * 16,
+                )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(ink)
+            painter.drawRoundedRect(QRectF(left + side * 0.16, top + side * 0.42, side * 0.68, side * 0.48), 2, 2)
+        painter.restore()
 
     def _pack_words(
         self,

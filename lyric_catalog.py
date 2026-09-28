@@ -46,7 +46,7 @@ def song_key(track_name: str, artist_name: str, album_name: str, duration_ms: in
 
     Returns:
         str: Normalized title, artist, and album. Duration is stored on the
-        document, but it is not part of the key. Windows can report two
+        document, but it is not part of the key. The player can report two
         lengths for one play.
 
     Precondition:

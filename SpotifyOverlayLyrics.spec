@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""Windows build of the lyric overlay. The lyric server is not included."""
+"""Mac build of the lyric overlay. The lyric server is not included."""
 
 from PyInstaller.utils.hooks import collect_data_files
 
@@ -13,15 +13,10 @@ datas += collect_data_files("opencc")
 hidden = [
     "zhconv",
     "opencc",
-    "winsdk",
-    "winsdk._winrt",
-    "winsdk.system",
-    "winsdk.windows.media",
-    "winsdk.windows.media.control",
-    "winsdk.windows.foundation",
-    "winsdk.windows.foundation.collections",
-    "winsdk.windows.storage",
-    "winsdk.windows.storage.streams",
+    "objc",
+    "Foundation",
+    "AppKit",
+    "CoreFoundation",
 ]
 
 a = Analysis(
@@ -33,7 +28,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["pymongo", "dns"],
+    excludes=["pymongo", "dns", "winsdk"],
     noarchive=False,
     optimize=0,
 )
@@ -60,4 +55,18 @@ coll = COLLECT(
     strip=False,
     upx=False,
     name="SpotifyOverlayLyrics",
+)
+
+app = BUNDLE(
+    coll,
+    name="SpotifyOverlayLyrics.app",
+    icon=None,
+    bundle_identifier="com.spotifyoverlaylyrics.desktop",
+    info_plist={
+        "CFBundleName": "Spotify Lyric Overlay",
+        "CFBundleDisplayName": "Spotify Lyric Overlay",
+        "NSAppleEventsUsageDescription": "Reads the song Spotify is playing so lyrics can follow it, and can pause, resume, and skip.",
+        "NSHighResolutionCapable": True,
+        "LSMinimumSystemVersion": "12.0",
+    },
 )

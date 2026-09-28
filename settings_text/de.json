@@ -33,5 +33,6 @@
   "none": "Kein synchronisierter Text für diesen Titel.",
   "busy": "LRCLIB ist ausgelastet. Neuer Versuch…",
   "loading": "Text wird geladen…",
-  "playback_failed": "Die Wiedergabe hat sich nicht geändert."
+  "playback_failed": "Die Wiedergabe hat sich nicht geändert.",
+  "automation": "Erlaube dieser App die Steuerung von Spotify unter Systemeinstellungen → Datenschutz & Sicherheit → Automatisierung."
 }

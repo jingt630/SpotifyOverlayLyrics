@@ -33,5 +33,6 @@
   "none": "이 곡의 동기화된 가사가 없습니다.",
   "busy": "LRCLIB이 바쁩니다. 다시 시도하는 중…",
   "loading": "가사 불러오는 중…",
-  "playback_failed": "재생이 바뀌지 않았습니다."
+  "playback_failed": "재생이 바뀌지 않았습니다.",
+  "automation": "시스템 설정 → 개인정보 보호 및 보안 → 자동화에서 이 앱이 Spotify를 제어하도록 허용하세요."
 }

@@ -1,6 +1,6 @@
-"""Show LRCLIB and NetEase lyrics for whatever Spotify is playing on this PC.
+"""Show LRCLIB and NetEase lyrics for whatever Spotify is playing on this Mac.
 
-Playback comes from the Windows media session. Lyric lookup lives in
+Playback comes from the Spotify desktop player. Lyric lookup lives in
 lrclib_client.py. NetEase word times live in netease_lyrics.py.
 """
 
@@ -22,7 +22,7 @@ from lrclib_client import LrcLibError, LyricLookup, LyricWindow
 # True prints the LRCLIB search. False follows the current lyric line on its own.
 PRINT_API_DETAILS = False
 
-# The local clock moves the lyric between Windows media samples.
+# The local clock moves the lyric between player samples.
 # How often to check the local clock for a new lyric pair. The pair itself is
 # printed only when it changes.
 LYRIC_DISPLAY_SECONDS = 0.1
@@ -167,6 +167,14 @@ class OverlayFollow(QObject):
     def _tick(self) -> None:
         """Advance the local clock and repaint when the lyric pair changes."""
         now = self._poll_if_due()
+        problem = self.playback.problem() if self.playback is not None else None
+        if problem and now is None:
+            self.playing = False
+            self.window.set_playing(False)
+            if self._shown != problem:
+                self._shown = problem
+                self.window.set_status(problem)
+            return
         elapsed_ms = int((time.monotonic() - self.anchor_at) * 1000) if self.playing else 0
         progress = self.anchor_progress + elapsed_ms
         duration = _duration_ms(now)
@@ -384,11 +392,11 @@ class OverlayFollow(QObject):
             self.window.set_notice(error)
 
     def _poll_if_due(self) -> dict | None:
-        """Return the latest Windows media sample."""
-        return self._poll_windows()
+        """Return the latest Spotify player sample."""
+        return self._poll_playback()
 
-    def _poll_windows(self) -> dict | None:
-        """Apply a Windows sample when an event or the one-second read published one."""
+    def _poll_playback(self) -> dict | None:
+        """Apply a player sample when the one-second read published one."""
         now, generation = self.playback.latest()
         if generation == self._seen_generation:
             return self._now
@@ -448,37 +456,37 @@ def _position_jumped(
     return abs(reported - estimate) >= SEEK_REWIND_MS
 
 
-def run_windows_overlay(lyrics: LyricLookup) -> None:
-    """Open the overlay and follow Spotify through the Windows media session.
+def run_overlay(lyrics: LyricLookup) -> None:
+    """Open the overlay and follow Spotify through the Mac player.
 
     Purpose:
         Show the same lyric pair as the Web API path, using title, artist,
         album, and position from the desktop app.
 
     Parameters:
-        lyrics (LyricLookup): Cache whose choice map is the Windows song key.
+        lyrics (LyricLookup): Cache whose choice map is the player song key.
 
     Returns:
         None.
 
     Precondition:
-        The WinRT media-control packages are installed.
+        This Mac can ask Spotify for the current song.
 
     Postcondition:
         The function returns when the overlay window is closed. Spotify's
         LRCLIB id maps under .spotify are not written.
     """
-    from windows_media import WindowsPlayback
+    from macos_media import MacPlayback
 
     app = QApplication.instance() or QApplication([])
     try:
-        playback = WindowsPlayback()
+        playback = MacPlayback()
         playback.start()
     except Exception as exc:
         QMessageBox.critical(
             None,
             "Spotify Lyric Overlay",
-            f"Could not read the Windows media session: {exc}",
+            f"Could not read Spotify: {exc}",
         )
         raise SystemExit(1)
     window = LyricOverlay()
@@ -498,10 +506,10 @@ def run_windows_overlay(lyrics: LyricLookup) -> None:
 
 
 def main() -> None:
-    """Open the overlay and follow the Windows media session.
+    """Open the overlay and follow the Spotify player.
 
     Purpose:
-        Read the song playing on this PC and show its lyrics.
+        Read the song playing on this Mac and show its lyrics.
 
     Parameters:
         None.
@@ -510,13 +518,12 @@ def main() -> None:
         None.
 
     Precondition:
-        The WinRT media-control packages are installed.
+        This Mac can ask Spotify for the current song.
 
     Postcondition:
         The function returns when the overlay window is closed.
     """
-    # Song titles can contain characters the default Windows console cannot print.
-    # pythonw.exe, used by the desktop shortcut, has no console.
+    # The packaged app has no console. A source run still prints safely.
     if sys.stdout is None:
         sys.stdout = open(os.devnull, "w", encoding="utf-8")
     if sys.stderr is None:
@@ -527,7 +534,7 @@ def main() -> None:
     lrclib_client.VERBOSE = PRINT_API_DETAILS
     lrclib_client.OVERLAY_CHOICES = not PRINT_API_DETAILS
     lyrics = LyricLookup()
-    run_windows_overlay(lyrics)
+    run_overlay(lyrics)
 
 
 if __name__ == "__main__":

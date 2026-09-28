@@ -33,5 +33,6 @@
   "none": "No synced lyrics for this track.",
   "busy": "LRCLIB is busy. Retrying…",
   "loading": "Loading lyrics…",
-  "playback_failed": "Playback did not change."
+  "playback_failed": "Playback did not change.",
+  "automation": "Allow this app to control Spotify in System Settings → Privacy & Security → Automation."
 }

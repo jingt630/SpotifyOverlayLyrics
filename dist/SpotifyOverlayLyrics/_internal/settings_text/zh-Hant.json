@@ -33,5 +33,6 @@
   "none": "這首歌沒有同步歌詞。",
   "busy": "歌詞庫繁忙，正在重試…",
   "loading": "正在載入歌詞…",
-  "playback_failed": "播放沒有切換。"
+  "playback_failed": "播放沒有切換。",
+  "automation": "請在「系統設定 → 隱私權與安全性 → 自動化」中允許此 App 控制 Spotify。"
 }
