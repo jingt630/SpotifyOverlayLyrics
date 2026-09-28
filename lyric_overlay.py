@@ -102,7 +102,7 @@ _GLYPH = {
 
 def _load_ui() -> dict:
     """Return the saved language, line mode, font size, and theme."""
-    saved = {"language": "en", "lines": "two", "font": _FONT_DEFAULT, "theme": "dark"}
+    saved = {"language": "en", "lines": "two", "font": _FONT_DEFAULT, "theme": "dark", "script": "original"}
     if not _SETTINGS_PATH.exists():
         return saved
     try:
@@ -118,14 +118,19 @@ def _load_ui() -> dict:
         saved["font"] = max(_FONT_MIN, min(_FONT_MAX, font))
     if raw.get("theme") in ("dark", "light"):
         saved["theme"] = raw["theme"]
+    if raw.get("script") in ("original", "simplified", "traditional"):
+        saved["script"] = raw["script"]
     return saved
 
 
-def _save_ui(language: str, lines: str, font: int, theme: str) -> None:
+def _save_ui(language: str, lines: str, font: int, theme: str, script: str) -> None:
     """Write the overlay settings next to the other local Spotify files."""
     _SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     _SETTINGS_PATH.write_text(
-        json.dumps({"language": language, "lines": lines, "font": font, "theme": theme}, indent=2),
+        json.dumps(
+            {"language": language, "lines": lines, "font": font, "theme": theme, "script": script},
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
@@ -174,6 +179,7 @@ class LyricOverlay(QWidget):
         self._line_mode = ui["lines"]
         self._font_size = ui["font"]
         self._theme = ui["theme"]
+        self._script = ui["script"]
         self.left = left
         self.right = right
         self._highlight = highlight
@@ -534,6 +540,13 @@ class LyricOverlay(QWidget):
             self._persist()
             self.update()
             return
+        if kind == "script":
+            self._lang_open = False
+            order = ("original", "simplified", "traditional")
+            self._script = order[(order.index(self._script) + 1) % len(order)]
+            self._persist()
+            self._relayout("top")
+            return
         if kind == "font-down":
             self._lang_open = False
             self._font_size = max(_FONT_MIN, self._font_size - 2)
@@ -552,9 +565,13 @@ class LyricOverlay(QWidget):
         if kind == "use" and self._on_pick is not None:
             self._on_pick(int(payload))
 
+    def chinese_script(self) -> str:
+        """Return original, simplified, or traditional for lyric characters."""
+        return self._script
+
     def _persist(self) -> None:
-        """Save language, line mode, font size, and theme."""
-        _save_ui(self._language, self._line_mode, self._font_size, self._theme)
+        """Save language, line mode, font size, theme, and Chinese script."""
+        _save_ui(self._language, self._line_mode, self._font_size, self._theme, self._script)
 
     def _hide_chrome_if_outside(self) -> None:
         """Drop the bar only when the pointer is outside the window."""
@@ -718,7 +735,7 @@ class LyricOverlay(QWidget):
     def _settings_content_height(self) -> int:
         """Return the full settings list height, including rows below the panel."""
         line_h = QFontMetrics(_ui_font(13)).height()
-        return 8 + (line_h + 10) * 3 + (line_h + 6) + 8
+        return 8 + (line_h + 10) * 4 + (line_h + 6) + 8
 
     def _settings_max_scroll(self) -> int:
         """Return how far the settings list can move up."""
@@ -1182,6 +1199,7 @@ class LyricOverlay(QWidget):
             ("lang", self.text("language"), f"{self.text('language_value')}  ▾"),
             ("lines", self.text("lines"), self.text(self._line_mode)),
             ("theme", self.text("theme"), self.text(self._theme)),
+            ("script", self.text("script"), self.text(f"script_{self._script}")),
         ]
         ink = self._ink()
         hot = QColor(255, 255, 255, 40) if self._theme == "dark" else QColor(0, 0, 0, 24)

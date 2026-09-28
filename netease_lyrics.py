@@ -18,6 +18,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from chinese_script import shown_text, stamp_lines
 from lrclib_client import (
     DURATION_CHOICE_THRESHOLD_MS,
     LyricCandidate,
@@ -394,8 +395,10 @@ def save_word_lyrics(query: dict, song: dict, lines: list[dict]) -> Path:
         lines is non-empty.
 
     Postcondition:
-        .netease/<song id>.json exists and is valid JSON.
+        .netease/<song id>.json exists and is valid JSON. Each line and word
+        stores a simplified copy and a traditional copy beside the original.
     """
+    stamp_lines(lines)
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = _OUT_DIR / f"{song['id']}.json"
     payload = {
@@ -531,6 +534,9 @@ class NeteaseChoiceStore:
         lines = payload.get("lines") if isinstance(payload, dict) else None
         if not isinstance(lines, list) or not lines:
             return None
+        if stamp_lines(lines):
+            payload["lines"] = lines
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         self.put(str(query.get("key") or ""), query, song_id)
         return lines
 
@@ -866,7 +872,7 @@ class NeteaseLookup:
         with self._lock:
             return self._phase
 
-    def frame_at(self, progress_ms: int) -> tuple[str, tuple[tuple[str, float], ...], str] | None:
+    def frame_at(self, progress_ms: int, script: str = "original") -> tuple[str, tuple[tuple[str, float], ...], str] | None:
         """Return the current NetEase line, each word's fill, and the next line.
 
         Purpose:
@@ -877,6 +883,8 @@ class NeteaseLookup:
 
         Parameters:
             progress_ms (int): Playback position in milliseconds.
+            script (str): original, simplified, or traditional. Stored copies
+                are used. Characters that are not Chinese stay as written.
 
         Returns:
             tuple | None: Side ("left" or "right"), words as (text, fill),
@@ -903,13 +911,13 @@ class NeteaseLookup:
             index = cursor + 1
         words = visible[index].get("words") or []
         flagged = tuple(
-            (str(word.get("text") or ""), _word_fill(word, progress_ms))
+            (shown_text(word, script), _word_fill(word, progress_ms))
             for word in words
-            if str(word.get("text") or "")
+            if isinstance(word, dict) and str(word.get("text") or "")
         )
         if not flagged:
-            flagged = ((str(visible[index].get("text") or ""), 0.0),)
-        following = str(visible[index + 1].get("text") or "") if index + 1 < len(visible) else ""
+            flagged = ((shown_text(visible[index], script), 0.0),)
+        following = shown_text(visible[index + 1], script) if index + 1 < len(visible) else ""
         side = "left" if index % 2 == 0 else "right"
         return side, flagged, following
 

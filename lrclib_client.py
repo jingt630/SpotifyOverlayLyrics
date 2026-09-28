@@ -27,6 +27,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from chinese_script import lrclib_lines
+
 # Public LRCLIB API. No key is sent.
 LRCLIB_API = "https://lrclib.net"
 # LRCLIB asks every app to identify itself. There is no account to create.
@@ -1281,7 +1283,7 @@ class LyricLookup:
             return None
         return lyric_window(self._match.lines, progress_ms)
 
-    def slots_at(self, now: dict | None, progress_ms: int) -> tuple[str, str, str] | None:
+    def slots_at(self, now: dict | None, progress_ms: int, script: str = "original") -> tuple[str, str, str] | None:
         """Return the left line, the right line, and which side is current.
 
         Purpose:
@@ -1291,6 +1293,8 @@ class LyricLookup:
         Parameters:
             now (dict | None): Spotify currently-playing body, or None.
             progress_ms (int): Playback position in milliseconds.
+            script (str): original, simplified, or traditional. Stored copies
+                are used. Japanese and other non-Chinese characters stay.
 
         Returns:
             tuple[str, str, str] | None: Left text, right text, and "left" or
@@ -1305,7 +1309,11 @@ class LyricLookup:
         self._ensure(now)
         if self._match is None:
             return None
-        return lyric_slots(self._match.lines, progress_ms)
+        lines = self._match.lines
+        converted = lrclib_lines(self._match.record_id, tuple(line.text for line in lines), script)
+        if converted is not None:
+            lines = tuple(LyricLine(line.time_ms, text) for line, text in zip(lines, converted))
+        return lyric_slots(lines, progress_ms)
 
     def pair_is_showing(self, track_id: str | None, window: LyricWindow) -> bool:
         """Return whether the terminal already printed this timestamp pair.

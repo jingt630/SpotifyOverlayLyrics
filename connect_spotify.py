@@ -203,7 +203,7 @@ class OverlayFollow(QObject):
             if time.monotonic() < self._netease_hold_until:
                 return
         if phase in ("saved", "words"):
-            frame = self.netease.frame_at(progress)
+            frame = self.netease.frame_at(progress, self.window.chinese_script())
             if frame is not None:
                 self._set_paint_interval(self.playing)
                 if frame != self._shown:
@@ -227,7 +227,7 @@ class OverlayFollow(QObject):
             self._shown = shown
             self.window.set_status(shown)
             return
-        slots = self.lyrics.slots_at(now, progress)
+        slots = self.lyrics.slots_at(now, progress, self.window.chinese_script())
         if slots is None or slots == self._shown:
             return
         self._shown = slots
